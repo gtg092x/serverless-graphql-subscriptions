@@ -1,7 +1,6 @@
 import { makeExecutableSchema } from 'graphql-tools'
 import { ApolloServer, gql } from 'apollo-server-lambda'
-import publish from './utils/publish'
-import subscribe from './utils/subscribe'
+import configurePubSub from './configurePubSub';
 
 const typeDefs = gql`
 	type Query {
@@ -17,14 +16,16 @@ const typeDefs = gql`
 
 const resolvers = {
 	Mutation: {
-		sendMessage: async (root, { message }) => {
-			await publish('MY_TOPIC', { listenMessage: message })
+		sendMessage: async (root, { message }, { pubSub }) => {
+			await pubSub.publish('MY_TOPIC', { listenMessage: message })
 			return message
 		}
 	},
 	Subscription: {
 		listenMessage: {
-			subscribe: subscribe('MY_TOPIC')
+			subscribe: (root, _, { pubSub }) => {
+				return pubSub.asyncIterator('MY_TOPIC')
+			}
 		}
 	}
 }
@@ -34,7 +35,14 @@ export const schema = makeExecutableSchema({
 	resolvers,
 })
 
-const server = new ApolloServer({ schema })
+const server = new ApolloServer({
+	schema,
+	context: (ctx) => {
+		return {
+			pubSub: configurePubSub()
+		}
+	}
+})
 
 export const handler = server.createHandler({
 	cors: {
@@ -42,4 +50,3 @@ export const handler = server.createHandler({
 		credentials: true,
 	}
 })
-

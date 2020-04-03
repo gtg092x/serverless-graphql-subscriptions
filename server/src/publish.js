@@ -1,5 +1,6 @@
 import DynamoDB from 'aws-sdk/clients/dynamodb'
 import Topic from './models/Topic'
+
 const parseNewEvent = DynamoDB.Converter.unmarshall
 
 export async function handler(event) {
@@ -10,5 +11,6 @@ export async function handler(event) {
 	const { topic, data } = process.env.IS_OFFLINE ?
 		subscruptionEvent.dynamodb.NewImage :
 		parseNewEvent(subscruptionEvent.dynamodb.NewImage)
+
 	return new Topic(topic).publishMessage(data)
 }

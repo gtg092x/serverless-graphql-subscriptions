@@ -1,12 +1,12 @@
 import { schema } from './graphql'
 import { parse, getOperationAST, validate, subscribe } from 'graphql'
 import Client from './models/Client'
+import { DynamoPubSub } from './utils/DynamoPubSub';
 
 export async function handler(event) {
 	if (!(event.requestContext && event.requestContext.connectionId)) {
 		throw new Error('Invalid event. Missing `connectionId` parameter.')
 	}
-
 	const connectionId = event.requestContext.connectionId
 	const route = event.requestContext.routeKey
 	const Subscriber = new Client(connectionId)
@@ -60,6 +60,11 @@ export async function handler(event) {
 		}
 
 		try {
+			const pubSub = new DynamoPubSub({
+				operation,
+				client: Subscriber,
+				ttl: Subscriber.ttl
+			})
 			await subscribe({
 				document: graphqlDocument,
 				schema,
@@ -67,10 +72,10 @@ export async function handler(event) {
 				operationName: operationName,
 				variableValues: variables,
 				contextValue: {
-					connectionId,
-					ttl: client.ttl
+					pubSub,
 				}
 			})
+			await pubSub.flushSubscriptions()
 		} catch(err) {
 			await Subscriber.sendMessage({
 				id: operation.id,
