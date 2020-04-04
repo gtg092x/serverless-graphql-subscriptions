@@ -1,6 +1,5 @@
 import { makeExecutableSchema } from 'graphql-tools'
-import { ApolloServer, gql } from 'apollo-server-lambda'
-import configurePubSub from './configurePubSub';
+import { gql } from 'apollo-server-lambda'
 
 const typeDefs = gql`
 	type Query {
@@ -30,23 +29,9 @@ const resolvers = {
 	}
 }
 
-export const schema = makeExecutableSchema({
+export const buildSchema = () => makeExecutableSchema({
 	typeDefs,
 	resolvers,
 })
 
-const server = new ApolloServer({
-	schema,
-	context: (ctx) => {
-		return {
-			pubSub: configurePubSub()
-		}
-	}
-})
-
-export const handler = server.createHandler({
-	cors: {
-		origin: '*',
-		credentials: true,
-	}
-})
+export const schema = buildSchema()

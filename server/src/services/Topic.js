@@ -1,7 +1,13 @@
 import uuid from 'uuid'
-import client from '../utils/dynamodb'
-import { handler as publish } from '../publish'
+import client from '../dynamodb'
+import { handler as publish } from '../../example/dynamo'
 import Client from './Client'
+
+const {
+	IS_OFFLINE,
+	TOPICS_TABLE,
+	EVENTS_TABLE,
+} = process.env
 
 class Topic {
 	constructor(topic) {
@@ -15,12 +21,12 @@ class Topic {
 			},
 			KeyConditionExpression: 'topic = :topic',
 			ProjectionExpression: 'connectionId, subscriptionId',
-			TableName: process.env.TOPICS_TABLE
+			TableName: TOPICS_TABLE,
 		}).promise()
 		return clients
 	}
 
-	async publishMessage(data) {
+	async pushMessageToConnections(data) {
 		const subscribers = await this.getSubscribers()
 		const promises = subscribers.map(async ({ connectionId, subscriptionId }) => {
 			const TopicSubscriber = new Client(connectionId)
@@ -46,7 +52,7 @@ class Topic {
 			topic: this.topic,
 			id: uuid.v4(),
 		}
-		if(process.env.IS_OFFLINE) { // dynamodb streams are not working offline so invoke lambda directly
+		if(IS_OFFLINE) {
 			await publish({
 				Records: [{
 					eventName: 'INSERT',
@@ -58,7 +64,7 @@ class Topic {
 		}
 		return client.put({
 			Item: payload,
-			TableName: process.env.EVENTS_TABLE
+			TableName: EVENTS_TABLE,
 		}).promise()
 	}
 }

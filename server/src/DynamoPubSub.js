@@ -1,7 +1,6 @@
 import { PubSubEngine } from 'graphql-subscriptions';
 import { $$asyncIterator } from 'iterall';
-import Client from '../models/Client';
-import Topic from '../models/Topic';
+import Topic from './services/Topic';
 
 class PubSubAsyncIterator {
 
@@ -61,13 +60,14 @@ export class DynamoPubSub extends PubSubEngine {
 	async publish(trigger, payload) {
 		await new Topic(trigger).postMessage(payload)
 	}
+	async pushMessageToConections(trigger, payload) {
+		await new Topic(trigger).pushMessageToConnections(payload)
+	}
 	constructor(options = {}) {
 		super()
 		const { ttl, client, operation } = options
 		this.ttl = ttl;
 		this.operation = operation;
-		this.subscriptionMap = {};
-		this.subsRefsMap = {};
 		this.iterators = []
 		this.client = client
 	}
@@ -87,10 +87,6 @@ export class DynamoPubSub extends PubSubEngine {
 			subscriptionId: id,
 			topic: triggerName,
 		})
-		this.subsRefsMap[triggerName] = [
-			...(this.subsRefsMap[triggerName] || []),
-			id,
-		];
 		return id
 	}
 

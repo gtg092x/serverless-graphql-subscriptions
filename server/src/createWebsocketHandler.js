@@ -1,9 +1,8 @@
-import { schema } from './graphql'
 import { parse, getOperationAST, validate, subscribe } from 'graphql'
-import Client from './models/Client'
-import { DynamoPubSub } from './utils/DynamoPubSub';
+import Client from './services/Client'
+import { DynamoPubSub } from './DynamoPubSub';
 
-export async function handler(event) {
+export const createWebSocketHandler = (schema) => async (event) => {
 	if (!(event.requestContext && event.requestContext.connectionId)) {
 		throw new Error('Invalid event. Missing `connectionId` parameter.')
 	}

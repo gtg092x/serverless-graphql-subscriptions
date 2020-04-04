@@ -1,16 +1,18 @@
 import DynamoDB from 'aws-sdk/clients/dynamodb'
-import Topic from './models/Topic'
+import { DynamoPubSub } from './DynamoPubSub';
 
 const parseNewEvent = DynamoDB.Converter.unmarshall
 
-export async function handler(event) {
+const { IS_OFFLINE } = process.env
+
+export const createPublishHandler = (clientConfig) => async (event) => {
 	const subscruptionEvent = event.Records[0]
 	if(subscruptionEvent.eventName !== 'INSERT') {
 		throw new Error('Invalid event. Wrong dynamodb event type, can publish only `INSERT` events to subscribers.')
 	}
-	const { topic, data } = process.env.IS_OFFLINE ?
+	const { topic, data } = IS_OFFLINE ?
 		subscruptionEvent.dynamodb.NewImage :
 		parseNewEvent(subscruptionEvent.dynamodb.NewImage)
-
-	return new Topic(topic).publishMessage(data)
+	const pubSub = new DynamoPubSub(clientConfig)
+	return pubSub.pushMessageToConections(topic, data)
 }

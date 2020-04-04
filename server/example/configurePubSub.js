@@ -1,5 +1,5 @@
 import { PubSub } from 'graphql-subscriptions';
-import { DynamoPubSub } from './utils/DynamoPubSub';
+import { DynamoPubSub } from '../src/DynamoPubSub';
 
 const configurePubSub = (options) => {
 	// const pubSub = new PubSub()

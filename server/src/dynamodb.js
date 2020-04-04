@@ -7,9 +7,14 @@ const localConfig = {
 	secretAccessKey: 'DEFAULT_SECRET'
 }
 
+const {
+	AWS_REGION,
+	IS_OFFLINE,
+} = process.env
+
 const remoteConfig = {
-	region: process.env.AWS_REGION
+	region: AWS_REGION
 }
 
-const client = new DynamoDB.DocumentClient(process.env.IS_OFFLINE ? localConfig : remoteConfig)
+const client = new DynamoDB.DocumentClient(IS_OFFLINE ? localConfig : remoteConfig)
 export default client

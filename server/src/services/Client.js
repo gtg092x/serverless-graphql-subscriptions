@@ -1,5 +1,10 @@
 import ApiGatewayManagementApi from 'aws-sdk/clients/apigatewaymanagementapi'
-import client from '../utils/dynamodb'
+import client from '../dynamodb'
+
+const {
+	IS_OFFLINE,
+	TOPICS_TABLE,
+} = process.env
 
 class Client {
 	constructor(connectionId) {
@@ -8,7 +13,7 @@ class Client {
 
 	async get() {
 		const { Item } = await client.get({
-			TableName: process.env.TOPICS_TABLE,
+			TableName: TOPICS_TABLE,
 			Key: {
 				connectionId: this.connectionId,
 				topic: 'INITIAL_CONNECTION'
@@ -25,7 +30,7 @@ class Client {
 			IndexName: 'reverse',
 			KeyConditionExpression: 'connectionId = :connectionId',
 			ProjectionExpression: 'topic, connectionId',
-			TableName: process.env.TOPICS_TABLE
+			TableName: TOPICS_TABLE,
 		}).promise()
 		return topics
 	}
@@ -42,7 +47,7 @@ class Client {
 	async unsubscribe() {
 		const topics = await this.getTopics()
 		return this.removeTopics({
-			[process.env.TOPICS_TABLE]: topics.map(({ topic, connectionId }) => ({
+			[TOPICS_TABLE]: topics.map(({ topic, connectionId }) => ({
 				DeleteRequest: { Key: { topic, connectionId } }
 			}))
 		})
@@ -51,7 +56,7 @@ class Client {
 	async sendMessage(message) {
 		const gatewayClient = new ApiGatewayManagementApi({
 			apiVersion: '2018-11-29',
-			endpoint: process.env.IS_OFFLINE ? 'http://localhost:3001' : process.env.PUBLISH_ENDPOINT
+			endpoint: IS_OFFLINE ? 'http://localhost:3001' : process.env.PUBLISH_ENDPOINT
 		})
 		return gatewayClient.postToConnection({
 			ConnectionId: this.connectionId,
@@ -67,7 +72,7 @@ class Client {
 				connectionId: this.connectionId,
 				ttl: typeof ttl === 'number' ? ttl : Math.floor(Date.now() / 1000) + 60 * 60 * 2,
 			},
-			TableName: process.env.TOPICS_TABLE
+			TableName: TOPICS_TABLE,
 		}).promise()
 	}
 
