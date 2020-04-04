@@ -1,6 +1,6 @@
 import { parse, getOperationAST, validate, subscribe } from 'graphql'
-import Client from './services/Client'
-import { DynamoPubSub } from './DynamoPubSub';
+import ConnectionManager from './services/ConnectionManager'
+import { ServerlessPubSub } from './ServerlessPubSub';
 
 export const createWebSocketHandler = (schema) => async (event) => {
 	if (!(event.requestContext && event.requestContext.connectionId)) {
@@ -8,14 +8,16 @@ export const createWebSocketHandler = (schema) => async (event) => {
 	}
 	const connectionId = event.requestContext.connectionId
 	const route = event.requestContext.routeKey
-	const Subscriber = new Client(connectionId)
+	const connectionManager = new ConnectionManager(connectionId, {
+		ttl: undefined
+	})
 	const response = { statusCode: 200, body: '' }
 
 	if(route === '$connect') {
-		await new Client(connectionId).connect()
+		await connectionManager.connect()
 		return response
 	} else if(route === '$disconnect') {
-		await new Client(connectionId).unsubscribe()
+		await connectionManager.unsubscribe()
 		return response
 	} else {
 		if (!event.body) {
@@ -25,16 +27,16 @@ export const createWebSocketHandler = (schema) => async (event) => {
 		let operation = JSON.parse(event.body)
 
 		if(operation.type === 'connection_init') {
-			await Subscriber.sendMessage({ type: 'connection_ack' })
+			await connectionManager.sendMessage({ type: 'connection_ack' })
 			return response
 		}
 
 		if(operation.type === 'stop') {
 			return response
 		}
-		const client = await Subscriber.get()
+		const client = await connectionManager.getConnectionRecords()
 		if(!client) {
-			throw new Error('Unknown client')
+			throw new Error('Connection records not found')
 		}
 
 		const { query: rawQuery, variables, operationName } = operation.payload
@@ -42,7 +44,7 @@ export const createWebSocketHandler = (schema) => async (event) => {
 		const operationAST = getOperationAST(graphqlDocument, operation.operationName || '')
 
 		if(!operationAST || operationAST.operation !== 'subscription') {
-			await Subscriber.sendMessage({
+			await connectionManager.sendMessage({
 				payload: { message: 'Only subscriptions are supported' },
 				type: 'error'
 			})
@@ -51,7 +53,7 @@ export const createWebSocketHandler = (schema) => async (event) => {
 
 		const validationErrors = validate(schema, graphqlDocument)
 		if(validationErrors.length > 0) {
-			await Subscriber.sendMessage({
+			await connectionManager.sendMessage({
 				payload: { errors: validationErrors },
 				type: 'error'
 			})
@@ -59,11 +61,9 @@ export const createWebSocketHandler = (schema) => async (event) => {
 		}
 
 		try {
-			const pubSub = new DynamoPubSub({
-				operation,
-				client: Subscriber,
-				ttl: Subscriber.ttl
-			})
+			const pubSub = new ServerlessPubSub({})
+			pubSub.setConnectionManager(connectionManager)
+			pubSub.setSubscriptionId(operation.id)
 			await subscribe({
 				document: graphqlDocument,
 				schema,
@@ -74,9 +74,9 @@ export const createWebSocketHandler = (schema) => async (event) => {
 					pubSub,
 				}
 			})
-			await pubSub.flushSubscriptions()
+			await pubSub.storeAllSubscriptions(connectionManager)
 		} catch(err) {
-			await Subscriber.sendMessage({
+			await connectionManager.sendMessage({
 				id: operation.id,
 				payload: err,
 				type: 'error'

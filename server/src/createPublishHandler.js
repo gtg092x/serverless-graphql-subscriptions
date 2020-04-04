@@ -1,5 +1,5 @@
 import DynamoDB from 'aws-sdk/clients/dynamodb'
-import { DynamoPubSub } from './DynamoPubSub';
+import { ServerlessPubSub } from './ServerlessPubSub';
 
 const parseNewEvent = DynamoDB.Converter.unmarshall
 
@@ -13,6 +13,6 @@ export const createPublishHandler = (clientConfig) => async (event) => {
 	const { topic, data } = IS_OFFLINE ?
 		subscruptionEvent.dynamodb.NewImage :
 		parseNewEvent(subscruptionEvent.dynamodb.NewImage)
-	const pubSub = new DynamoPubSub(clientConfig)
+	const pubSub = new ServerlessPubSub(clientConfig)
 	return pubSub.pushMessageToConections(topic, data)
 }

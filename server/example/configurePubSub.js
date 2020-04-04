@@ -1,9 +1,9 @@
 import { PubSub } from 'graphql-subscriptions';
-import { DynamoPubSub } from '../src/DynamoPubSub';
+import { ServerlessPubSub } from '../src/ServerlessPubSub';
 
 const configurePubSub = (options) => {
 	// const pubSub = new PubSub()
-	return new DynamoPubSub(options)
+	return new ServerlessPubSub(options)
 }
 
 export default configurePubSub

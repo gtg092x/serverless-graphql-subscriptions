@@ -1,0 +1,31 @@
+{
+	"compilerOptions": {
+		"rootDirs": [
+			"src",
+			"example"
+		],
+		"target": "es2017",
+		"module": "commonjs",
+		"outDir": "dist",
+		"allowJs": false,
+		"composite": true,
+		"declaration": true,
+		"declarationMap": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"incremental": true,
+		"jsx": "react",
+		"lib": ["es2018"],
+		"moduleResolution": "node",
+		"sourceMap": true,
+		"strict": true
+	},
+	"include": ["src", "example"],
+	"exclude": [
+		"dist",
+		"node_modules",
+		"**/__tests__/**",
+		"**/__mocks__/**",
+		"**/fixtures/**"
+	]
+}

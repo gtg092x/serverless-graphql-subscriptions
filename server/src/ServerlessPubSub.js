@@ -56,42 +56,42 @@ class PubSubAsyncIterator {
 	}
 }
 
-export class DynamoPubSub extends PubSubEngine {
+export class ServerlessPubSub extends PubSubEngine {
 	async publish(trigger, payload) {
 		await new Topic(trigger).postMessage(payload)
 	}
 	async pushMessageToConections(trigger, payload) {
 		await new Topic(trigger).pushMessageToConnections(payload)
 	}
-	constructor(options = {}) {
+	constructor() {
 		super()
-		const { ttl, client, operation } = options
-		this.ttl = ttl;
-		this.operation = operation;
 		this.iterators = []
-		this.client = client
+
 	}
 
+	setConnectionManager(client) {
+		this.connectionManager = client
+	}
+
+	setSubscriptionId(subscriptionId) {
+		this.subscriptionId = subscriptionId
+	}
 
 	async subscribe(
 		trigger,
 		onMessage,
 		options,
 	) {
-		const id = this.operation.id
-		const triggerName = trigger
 
-
-		await this.client.subscribe({
-			ttl: this.ttl,
-			subscriptionId: id,
-			topic: triggerName,
+		await this.connectionManager.subscribe({
+			subscriptionId: this.subscriptionId,
+			topic: trigger,
 		})
-		return id
+		return this.subscriptionId
 	}
 
 	unsubscribe(subId) {
-		return this.client.unsubscribe()
+		return this.connectionManager.unsubscribe()
 	}
 
 	asyncIterator(triggers, options) {
@@ -100,23 +100,8 @@ export class DynamoPubSub extends PubSubEngine {
 		return iterator
 	}
 
-	flushSubscriptions() {
+	storeAllSubscriptions() {
 		return Promise.all(this.iterators.map(i => i.subscribeAll()))
 	}
 
-	getSubscriber() {
-		return this.client
-	}
-
-	getPublisher() {
-		return this.client
-	}
-
-	close() {
-
-	}
-
-	onMessage(pattern, channel, message) {
-
-	}
 }

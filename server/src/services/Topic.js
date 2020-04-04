@@ -1,7 +1,7 @@
 import uuid from 'uuid'
-import client from '../dynamodb'
+import dynamodbClient from './dynamodbClient'
 import { handler as publish } from '../../example/dynamo'
-import Client from './Client'
+import ConnectionManager from './ConnectionManager'
 
 const {
 	IS_OFFLINE,
@@ -15,7 +15,7 @@ class Topic {
 	}
 
 	async getSubscribers() {
-		const { Items: clients } = await client.query({
+		const { Items: clients } = await dynamodbClient.query({
 			ExpressionAttributeValues: {
 				':topic': this.topic
 			},
@@ -29,7 +29,7 @@ class Topic {
 	async pushMessageToConnections(data) {
 		const subscribers = await this.getSubscribers()
 		const promises = subscribers.map(async ({ connectionId, subscriptionId }) => {
-			const TopicSubscriber = new Client(connectionId)
+			const TopicSubscriber = new ConnectionManager(connectionId)
 			try {
 				const res = await TopicSubscriber.sendMessage({
 					id: subscriptionId,
@@ -38,7 +38,7 @@ class Topic {
 				})
 				return res
 			} catch(err) {
-				if(err.statusCode === 410) {	// this client has disconnected unsubscribe it
+				if(err.statusCode === 410) {	// this dynamoDBClient has disconnected unsubscribe it
 					return TopicSubscriber.unsubscribe()
 				}
 			}
@@ -62,7 +62,7 @@ class Topic {
 				}]
 			})
 		}
-		return client.put({
+		return dynamodbClient.put({
 			Item: payload,
 			TableName: EVENTS_TABLE,
 		}).promise()

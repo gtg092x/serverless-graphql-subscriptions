@@ -1,18 +1,19 @@
 import ApiGatewayManagementApi from 'aws-sdk/clients/apigatewaymanagementapi'
-import client from '../dynamodb'
+import dynamoDBClient from './dynamodbClient'
 
 const {
 	IS_OFFLINE,
 	TOPICS_TABLE,
 } = process.env
 
-class Client {
-	constructor(connectionId) {
+class ConnectionManager {
+	constructor(connectionId, options = {}) {
 		this.connectionId = connectionId
+		this.options = options
 	}
 
-	async get() {
-		const { Item } = await client.get({
+	async getConnectionRecords() {
+		const { Item } = await dynamoDBClient.get({
 			TableName: TOPICS_TABLE,
 			Key: {
 				connectionId: this.connectionId,
@@ -23,7 +24,7 @@ class Client {
 	}
 
 	async getTopics() {
-		const { Items: topics } = await client.query({
+		const { Items: topics } = await dynamoDBClient.query({
 			ExpressionAttributeValues: {
 				':connectionId': this.connectionId
 			},
@@ -36,7 +37,7 @@ class Client {
 	}
 
 	async removeTopics(RequestItems) {
-		const res = await client.batchWrite({
+		const res = await dynamoDBClient.batchWrite({
 			RequestItems
 		}).promise()
 		if(res.UnprocessedItems && res.UnprocessedItems.length) {
@@ -64,8 +65,9 @@ class Client {
 		}).promise()
 	}
 
-	async subscribe({ topic, subscriptionId, ttl }) {
-		return client.put({
+	async subscribe({ topic, subscriptionId }) {
+		const ttl = this.options.ttl
+		return dynamoDBClient.put({
 			Item: {
 				topic,
 				subscriptionId,
@@ -83,4 +85,4 @@ class Client {
 	}
 }
 
-export default Client
+export default ConnectionManager
