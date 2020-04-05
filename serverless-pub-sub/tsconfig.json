@@ -1,8 +1,6 @@
 {
 	"compilerOptions": {
-		"rootDirs": [
-			"src",
-		],
+		"rootDir": "src",
 		"target": "es2017",
 		"module": "commonjs",
 		"outDir": "dist",
@@ -19,7 +17,7 @@
 		"sourceMap": true,
 		"strict": true
 	},
-	"include": ["src", "example"],
+	"include": ["src"],
 	"exclude": [
 		"dist",
 		"node_modules",
