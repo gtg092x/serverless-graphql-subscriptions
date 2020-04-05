@@ -1,5 +1,5 @@
 {
-	"name": "serverless-pub-sub",
+	"name": "serverless-graphql-pubsub",
 	"version": "1.0.0",
 	"main": "dist/index.js",
 	"description": "Serverless PubSub Interface",
