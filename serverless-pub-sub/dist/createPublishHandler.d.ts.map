@@ -1,1 +1,1 @@
-{"version":3,"file":"createPublishHandler.d.ts","sourceRoot":"","sources":["../src/createPublishHandler.ts"],"names":[],"mappings":"AAMA,eAAO,MAAM,oBAAoB;;kCAShC,CAAA"}
+{"version":3,"file":"createPublishHandler.d.ts","sourceRoot":"","sources":["../src/createPublishHandler.ts"],"names":[],"mappings":"AACA,OAAO,EAAC,gBAAgB,EAAC,MAAM,oBAAoB,CAAC;AAMpD,eAAO,MAAM,oBAAoB;;mCAShC,CAAA"}

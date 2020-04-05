@@ -1,7 +1,7 @@
 import { schema } from './schema'
 import { ApolloServer } from 'apollo-server-lambda'
 import configurePubSub from './configurePubSub'
-import { DynamoService } from '../serverless-pub-sub/src/services/dynamodbClient'
+import { DynamoService } from '../serverless-pub-sub/src'
 import { handler as publish } from './dynamo'
 
 const {

@@ -1,8 +1,26 @@
-import { parse, getOperationAST, validate, subscribe } from 'graphql'
+import {parse, getOperationAST, validate, subscribe, GraphQLSchema} from 'graphql'
+import ConnectionManager from './services/ConnectionManager';
+import {ServerlessPubSub} from './ServerlessPubSub';
+import {APIGatewayEvent} from 'aws-lambda';
 
 const DEFAULT_OK = { statusCode: 200, body: '' }
 
-const handleMessage = async (connectionManager, pubSub, schema, operation) => {
+interface WSOperation {
+	operationName: string;
+	id: string;
+	payload: {
+		query: any,
+		variables: any,
+		operationName: string,
+	}
+}
+
+const handleMessage = async (
+	connectionManager: ConnectionManager,
+	pubSub: ServerlessPubSub,
+	schema: GraphQLSchema,
+	operation: WSOperation
+) => {
 
 	const client = await connectionManager.getConnectionRecords()
 	if(!client) {
@@ -43,7 +61,7 @@ const handleMessage = async (connectionManager, pubSub, schema, operation) => {
 				pubSub,
 			}
 		})
-		await pubSub.storeAllSubscriptions(connectionManager)
+		await pubSub.storeAllSubscriptions()
 	} catch(err) {
 		await connectionManager.sendMessage({
 			id: operation.id,
@@ -54,7 +72,10 @@ const handleMessage = async (connectionManager, pubSub, schema, operation) => {
 	return DEFAULT_OK
 }
 
-export const createWebSocketHandler = (schema, options) => async (event) => {
+export const createWebSocketHandler = (
+	schema: GraphQLSchema,
+	options: { pubSub: ServerlessPubSub, ttl?: number },
+) => async (event: APIGatewayEvent) => {
 	const { pubSub } = options
 	if (!(event.requestContext && event.requestContext.connectionId)) {
 		throw new Error('Invalid event. Missing `connectionId` parameter.')

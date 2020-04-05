@@ -1,4 +1,5 @@
+import { ServerlessPubSub } from './ServerlessPubSub';
 export declare const createPublishHandler: ({ pubSub }: {
-    pubSub: any;
-}) => (event: any) => Promise<any>;
+    pubSub: ServerlessPubSub;
+}) => (event: any) => Promise<void>;
 //# sourceMappingURL=createPublishHandler.d.ts.map
