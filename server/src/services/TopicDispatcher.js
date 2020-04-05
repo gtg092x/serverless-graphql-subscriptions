@@ -2,19 +2,18 @@ import { DynamoService } from './dynamodbClient'
 import ConnectionManager from './ConnectionManager'
 
 class TopicDispatcher {
-	constructor(topic) {
-		this.topic = topic
+	constructor() {
 		this.dynamoDbService = new DynamoService()
 	}
 
-	async getSubscribers() {
+	async getSubscribers(topic) {
 		return this
 			.dynamoDbService
-			.querySubscribersForTopic(this.topic)
+			.querySubscribersForTopic(topic)
 	}
 
-	async pushMessageToConnections(data) {
-		const subscribers = await this.getSubscribers()
+	async pushMessageToConnectionsForTopic(topic, data) {
+		const subscribers = await this.getSubscribers(topic)
 		const promises = subscribers.map(async ({ connectionId, subscriptionId }) => {
 			const topicConnectionManager = new ConnectionManager(connectionId)
 			try {
@@ -33,10 +32,10 @@ class TopicDispatcher {
 		return Promise.all(promises)
 	}
 
-	async postMessage(data) {
+	async postMessage(topic, data) {
 		return this
 			.dynamoDbService
-			.postMessageToTopic(this.topic, data)
+			.postMessageToTopic(topic, data)
 	}
 }
 

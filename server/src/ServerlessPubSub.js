@@ -58,15 +58,15 @@ class PubSubAsyncIterator {
 
 export class ServerlessPubSub extends PubSubEngine {
 	async publish(trigger, payload) {
-		await new TopicDispatcher(trigger).postMessage(payload)
+		await this.topicDispatcher.postMessage(trigger, payload)
 	}
 	async pushMessageToConections(trigger, payload) {
-		await new TopicDispatcher(trigger).pushMessageToConnections(payload)
+		await this.topicDispatcher.pushMessageToConnectionsForTopic(trigger, payload)
 	}
 	constructor() {
 		super()
 		this.iterators = []
-
+		this.topicDispatcher = new TopicDispatcher()
 	}
 
 	setConnectionManager(client) {
