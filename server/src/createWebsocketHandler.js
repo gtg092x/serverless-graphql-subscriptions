@@ -1,10 +1,8 @@
 import { parse, getOperationAST, validate, subscribe } from 'graphql'
-import ConnectionManager from './services/ConnectionManager'
-import { ServerlessPubSub } from './ServerlessPubSub';
 
 const DEFAULT_OK = { statusCode: 200, body: '' }
 
-const handleMessage = async (connectionManager, schema, operation) => {
+const handleMessage = async (connectionManager, pubSub, schema, operation) => {
 
 	const client = await connectionManager.getConnectionRecords()
 	if(!client) {
@@ -32,10 +30,9 @@ const handleMessage = async (connectionManager, schema, operation) => {
 		return DEFAULT_OK
 	}
 
+	pubSub.setSubscriptionId(operation.id)
+
 	try {
-		const pubSub = new ServerlessPubSub({})
-		pubSub.setConnectionManager(connectionManager)
-		pubSub.setSubscriptionId(operation.id)
 		await subscribe({
 			document: graphqlDocument,
 			schema,
@@ -58,14 +55,13 @@ const handleMessage = async (connectionManager, schema, operation) => {
 }
 
 export const createWebSocketHandler = (schema, options) => async (event) => {
+	const { pubSub } = options
 	if (!(event.requestContext && event.requestContext.connectionId)) {
 		throw new Error('Invalid event. Missing `connectionId` parameter.')
 	}
 	const connectionId = event.requestContext.connectionId
 	const route = event.requestContext.routeKey
-	const connectionManager = new ConnectionManager(connectionId, {
-		ttl: undefined
-	})
+	const connectionManager = pubSub.createAndSetConnectionManager(connectionId)
 
 	switch (route) {
 		case '$connect':
@@ -88,7 +84,7 @@ export const createWebSocketHandler = (schema, options) => async (event) => {
 					return DEFAULT_OK
 				}
 				default:
-					return handleMessage(connectionManager, schema, operation)
+					return handleMessage(connectionManager, pubSub, schema, operation)
 			}
 		default:
 			throw new Error(`Route ${route} is not supported`)

@@ -1,6 +1,7 @@
 import { PubSubEngine } from 'graphql-subscriptions';
 import { $$asyncIterator } from 'iterall';
 import TopicDispatcher from './services/TopicDispatcher';
+import ConnectionManager from './services/ConnectionManager';
 
 class PubSubAsyncIterator {
 
@@ -92,6 +93,14 @@ export class ServerlessPubSub extends PubSubEngine {
 
 	unsubscribe(subId) {
 		return this.connectionManager.unsubscribe()
+	}
+
+	createAndSetConnectionManager(connectionId) {
+		const connectionManager = new ConnectionManager(connectionId, {
+			ttl: undefined
+		})
+		this.setConnectionManager(connectionManager)
+		return connectionManager
 	}
 
 	asyncIterator(triggers, options) {
