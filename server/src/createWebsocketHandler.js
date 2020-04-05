@@ -57,7 +57,7 @@ const handleMessage = async (connectionManager, schema, operation) => {
 	return DEFAULT_OK
 }
 
-export const createWebSocketHandler = (schema) => async (event) => {
+export const createWebSocketHandler = (schema, options) => async (event) => {
 	if (!(event.requestContext && event.requestContext.connectionId)) {
 		throw new Error('Invalid event. Missing `connectionId` parameter.')
 	}

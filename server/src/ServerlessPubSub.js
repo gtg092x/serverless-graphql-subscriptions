@@ -1,6 +1,6 @@
 import { PubSubEngine } from 'graphql-subscriptions';
 import { $$asyncIterator } from 'iterall';
-import Topic from './services/Topic';
+import TopicDispatcher from './services/TopicDispatcher';
 
 class PubSubAsyncIterator {
 
@@ -58,10 +58,10 @@ class PubSubAsyncIterator {
 
 export class ServerlessPubSub extends PubSubEngine {
 	async publish(trigger, payload) {
-		await new Topic(trigger).postMessage(payload)
+		await new TopicDispatcher(trigger).postMessage(payload)
 	}
 	async pushMessageToConections(trigger, payload) {
-		await new Topic(trigger).pushMessageToConnections(payload)
+		await new TopicDispatcher(trigger).pushMessageToConnections(payload)
 	}
 	constructor() {
 		super()
