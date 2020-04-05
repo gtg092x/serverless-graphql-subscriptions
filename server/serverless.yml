@@ -42,7 +42,7 @@ custom:
 
 functions:
   graphql:
-    handler: http.handler
+    handler: src/http.handler
     role: role
     events:
         - http:
@@ -52,7 +52,7 @@ functions:
               origins:
                   - '*'
   websocket:
-    handler: websocket.handler
+    handler: src/websocket.handler
     role: role
     events:
       - websocket: 
@@ -62,7 +62,7 @@ functions:
       - websocket: 
          route: $default
   publish:
-    handler: dynamo.handler
+    handler: src/dynamo.handler
     role: role
     events:
       - stream:

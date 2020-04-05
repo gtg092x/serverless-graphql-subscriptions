@@ -27,3 +27,7 @@ yarn-error.log*
 server/.serverless
 server/.dynamodb
 server/.webpack
+dist
+src/*.d.ts.map
+src/*.d.ts
+!*/types.d.ts

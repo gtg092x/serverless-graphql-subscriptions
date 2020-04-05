@@ -18,10 +18,10 @@ interface WSOperation {
 const handleMessage = async (
 	connectionManager: ConnectionManager,
 	pubSub: ServerlessPubSub,
-	schema: GraphQLSchema,
+	schemaPromise: GraphQLSchema | Promise<GraphQLSchema>,
 	operation: WSOperation
 ) => {
-
+	const schema = await schemaPromise
 	const client = await connectionManager.getConnectionRecords()
 	if(!client) {
 		throw new Error('Connection records not found')
@@ -73,9 +73,13 @@ const handleMessage = async (
 }
 
 export const createWebSocketHandler = (
-	schema: GraphQLSchema,
+	schemaPromise: GraphQLSchema | Promise<GraphQLSchema | void>,
 	options: { pubSub: ServerlessPubSub, ttl?: number },
 ) => async (event: APIGatewayEvent) => {
+	const schema = await schemaPromise
+	if (schema === undefined) {
+		throw new Error('Schema not loaded')
+	}
 	const { pubSub } = options
 	if (!(event.requestContext && event.requestContext.connectionId)) {
 		throw new Error('Invalid event. Missing `connectionId` parameter.')

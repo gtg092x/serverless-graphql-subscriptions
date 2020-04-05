@@ -1,4 +1,4 @@
-import { ServerlessPubSub } from '../serverless-pub-sub/src'
+import { ServerlessPubSub } from '../../serverless-pub-sub/src'
 
 const {
 	EVENTS_TABLE,
