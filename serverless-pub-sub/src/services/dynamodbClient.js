@@ -10,26 +10,30 @@ const localConfig = {
 
 const {
 	AWS_REGION,
-	EVENTS_TABLE,
 	IS_OFFLINE,
-	TOPICS_TABLE,
 } = process.env
 
 const remoteConfig = {
 	region: AWS_REGION
 }
 
-let client
-
 export class DynamoService {
-	constructor() {
-		client = client || new DynamoDB.DocumentClient(IS_OFFLINE ? localConfig : remoteConfig)
-		this.client = client
+	constructor(tableConfig) {
+		this.client = new DynamoDB.DocumentClient(IS_OFFLINE ? localConfig : remoteConfig)
+		this.tableConfig = tableConfig
+	}
+
+	getTopicsTable() {
+		return this.tableConfig.topicsTable
+	}
+
+	getEventsTable() {
+		return this.tableConfig.eventsTable
 	}
 
 	async getInitialConnectionRecordsForConnectionId(connectionId) {
 		const { Item } = await this.client.get({
-			TableName: TOPICS_TABLE,
+			TableName: this.getTopicsTable(),
 			Key: {
 				connectionId,
 				topic: 'INITIAL_CONNECTION'
@@ -46,7 +50,7 @@ export class DynamoService {
 			IndexName: 'reverse',
 			KeyConditionExpression: 'connectionId = :connectionId',
 			ProjectionExpression: 'topic, connectionId',
-			TableName: TOPICS_TABLE,
+			TableName: this.getTopicsTable(),
 		}).promise()
 		return topics
 	}
@@ -58,7 +62,7 @@ export class DynamoService {
 			},
 			KeyConditionExpression: 'topic = :topic',
 			ProjectionExpression: 'connectionId, subscriptionId',
-			TableName: TOPICS_TABLE,
+			TableName: this.getTopicsTable(),
 		}).promise()
 		return clients
 	}
@@ -74,7 +78,7 @@ export class DynamoService {
 
 	async unsubscribeTopics(topics) {
 		return this.removeItems({
-			[TOPICS_TABLE]: topics.map(({ topic, connectionId }) => ({
+			[this.getTopicsTable()]: topics.map(({ topic, connectionId }) => ({
 				DeleteRequest: { Key: { topic, connectionId } }
 			}))
 		})
@@ -88,7 +92,7 @@ export class DynamoService {
 				connectionId,
 				ttl: typeof ttl === 'number' ? ttl : Math.floor(Date.now() / 1000) + 60 * 60 * 2,
 			},
-			TableName: TOPICS_TABLE,
+			TableName: this.getTopicsTable(),
 		}).promise()
 	}
 
@@ -103,7 +107,7 @@ export class DynamoService {
 		}
 		return this.client.put({
 			Item: payload,
-			TableName: EVENTS_TABLE,
+			TableName: this.getEventsTable(),
 		}).promise()
 	}
 

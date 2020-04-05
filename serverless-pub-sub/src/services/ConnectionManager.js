@@ -1,12 +1,11 @@
-import { DynamoService } from './dynamodbClient'
 import { ApiGatewayService } from './apiGatewayClient';
 
 class ConnectionManager {
-	constructor(connectionId, options = {}) {
+	constructor(connectionId, dynamoDbService, options) {
 		this.connectionId = connectionId
-		this.gatewayService = new ApiGatewayService()
-		this.dynamoDbService = new DynamoService()
-		this.options = options
+		this.gatewayService = new ApiGatewayService(options)
+		this.dynamoDbService = dynamoDbService
+		this.ttl = options.ttl
 	}
 
 	async getConnectionRecords() {
@@ -15,20 +14,23 @@ class ConnectionManager {
 	}
 
 	async getTopics() {
-		return this.dynamoDbService.queryTopicsForConnectionId(this.connectionId)
+		return this.dynamoDbService
+			.queryTopicsForConnectionId(this.connectionId)
 	}
 
 	async unsubscribe() {
 		const topics = await this.getTopics()
-		return this.dynamoDbService.unsubscribeTopics(topics)
+		return this.dynamoDbService
+			.unsubscribeTopics(topics)
 	}
 
 	async sendMessage(message) {
-		return this.gatewayService.postToConnection(this.connectionId, message)
+		return this.gatewayService
+			.postToConnection(this.connectionId, message)
 	}
 
 	async subscribe({ topic, subscriptionId }) {
-		const ttl = this.options.ttl
+		const ttl = this.ttl
 		return this.dynamoDbService.putSubscriptionForConnectionId(
 			this.connectionId,
 			ttl,

@@ -1,9 +1,9 @@
-import { DynamoService } from './dynamodbClient'
 import ConnectionManager from './ConnectionManager'
 
 class TopicDispatcher {
-	constructor() {
-		this.dynamoDbService = new DynamoService()
+	constructor(dynamoDbService, options) {
+		this.dynamoDbService = dynamoDbService
+		this.options = options
 	}
 
 	async getSubscribers(topic) {
@@ -15,7 +15,11 @@ class TopicDispatcher {
 	async pushMessageToConnectionsForTopic(topic, data) {
 		const subscribers = await this.getSubscribers(topic)
 		const promises = subscribers.map(async ({ connectionId, subscriptionId }) => {
-			const topicConnectionManager = new ConnectionManager(connectionId)
+			const topicConnectionManager = new ConnectionManager(
+				connectionId,
+				this.dynamoDbService,
+				this.options,
+			)
 			try {
 				const res = await topicConnectionManager.sendMessage({
 					id: subscriptionId,

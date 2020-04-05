@@ -25,7 +25,7 @@ package:
 
 custom:
   webpack:
-    webpackConfig: 'webpack.config.js'
+    webpackConfig: 'example/webpack.config.js'
     includeModules:
       packagePath: './package.json'
   dynamodb:
@@ -42,7 +42,7 @@ custom:
 
 functions:
   graphql:
-    handler: http.handler
+    handler: example/http.handler
     role: role
     events:
         - http:
@@ -52,7 +52,7 @@ functions:
               origins:
                   - '*'
   websocket:
-    handler: websocket.handler
+    handler: example/websocket.handler
     role: role
     events:
       - websocket: 
@@ -62,7 +62,7 @@ functions:
       - websocket: 
          route: $default
   publish:
-    handler: dynamo.handler
+    handler: example/dynamo.handler
     role: role
     events:
       - stream:

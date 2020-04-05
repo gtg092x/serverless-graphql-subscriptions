@@ -1,8 +1,8 @@
-import { schema } from './schema';
+import { schema } from './schema'
 import { ApolloServer } from 'apollo-server-lambda'
-import configurePubSub from './configurePubSub';
-import { DynamoService } from '../src/services/dynamodbClient';
-import { handler as publish } from './dynamo';
+import configurePubSub from './configurePubSub'
+import { DynamoService } from '../serverless-pub-sub/src/services/dynamodbClient'
+import { handler as publish } from './dynamo'
 
 const {
 	IS_OFFLINE

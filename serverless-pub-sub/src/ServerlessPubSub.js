@@ -2,12 +2,12 @@ import { PubSubEngine } from 'graphql-subscriptions';
 import { $$asyncIterator } from 'iterall';
 import TopicDispatcher from './services/TopicDispatcher';
 import ConnectionManager from './services/ConnectionManager';
+import { DynamoService } from './services/dynamodbClient';
 
 class PubSubAsyncIterator {
 
-	constructor(pubsub, eventNames, options) {
+	constructor(pubsub, eventNames) {
 		this.pubsub = pubsub;
-		this.options = options;
 		this.pullQueue = [];
 		this.pushQueue = [];
 		this.listening = true;
@@ -64,10 +64,12 @@ export class ServerlessPubSub extends PubSubEngine {
 	async pushMessageToConections(trigger, payload) {
 		await this.topicDispatcher.pushMessageToConnectionsForTopic(trigger, payload)
 	}
-	constructor() {
+	constructor(options) {
 		super()
 		this.iterators = []
-		this.topicDispatcher = new TopicDispatcher()
+		this.dynamoDbService = new DynamoService(options)
+		this.topicDispatcher = new TopicDispatcher(this.dynamoDbService, options)
+		this.options = options
 	}
 
 	setConnectionManager(client) {
@@ -96,15 +98,17 @@ export class ServerlessPubSub extends PubSubEngine {
 	}
 
 	createAndSetConnectionManager(connectionId) {
-		const connectionManager = new ConnectionManager(connectionId, {
-			ttl: undefined
-		})
+		const connectionManager = new ConnectionManager(
+			connectionId,
+			this.dynamoDbService,
+			this.options,
+		)
 		this.setConnectionManager(connectionManager)
 		return connectionManager
 	}
 
-	asyncIterator(triggers, options) {
-		const iterator = new PubSubAsyncIterator(this, triggers, options)
+	asyncIterator(triggers) {
+		const iterator = new PubSubAsyncIterator(this, triggers)
 		this.iterators.push(iterator)
 		return iterator
 	}

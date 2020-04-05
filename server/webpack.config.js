@@ -18,7 +18,7 @@ module.exports = (() => {
 			hints: false
 		},
 		resolve: {
-			extensions: ['.js']
+			extensions: ['.js', '.ts']
 		},
 		module: {
 			rules: [
@@ -33,7 +33,7 @@ module.exports = (() => {
 		},
 		output: {
 			libraryTarget: 'commonjs',
-			path: path.resolve(__dirname, '../.webpack/'),
+			path: path.resolve(__dirname, '.webpack/'),
 			filename: '[name].js',
 		},
 		plugins: [
