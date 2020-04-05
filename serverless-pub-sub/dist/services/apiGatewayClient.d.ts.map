@@ -1,1 +1,0 @@
-{"version":3,"file":"apiGatewayClient.d.ts","sourceRoot":"","sources":["../../src/services/apiGatewayClient.ts"],"names":[],"mappings":"AAMA,qBAAa,iBAAiB;IAC7B,OAAO,CAAC,aAAa,CAA0B;gBAEnC,eAAe,CAAC,EAAE,MAAM;IAOpC,gBAAgB,CACf,YAAY,EAAE,MAAM,EACpB,OAAO,EAAE,GAAG;;;CAQb"}
