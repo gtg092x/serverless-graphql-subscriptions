@@ -1,12 +1,15 @@
 {
   "name": "serverless-graphql-subscriptions",
+	"main": "dist/index.js",
+	"typings": "dist/index.d.ts",
   "version": "1.0.0",
-  "description": "Example of graphql subscriptions application done using aws lambda and aws websockets api gateway",
-  "author": "github.com/AlpacaGoesCrazy",
+  "description": "Serverless PubSub Interface",
+  "author": "github.com/gtg092x",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
+    "@types/aws-sdk": "^2.7.0",
     "eslint": "^6.1.0",
     "eslint-plugin-flowtype": "^4.3.0",
     "eslint-plugin-import": "2.17.2",

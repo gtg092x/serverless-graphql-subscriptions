@@ -1,0 +1,7 @@
+dist
+src/*/*.d.ts.map
+src/*.d.ts.map
+src/*/*.d.ts
+src/*.d.ts
+!**/types.d.ts
+tsconfig.tsbuildinfo
