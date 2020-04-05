@@ -1,18 +1,30 @@
 import ConnectionManager from './ConnectionManager'
+import {DynamoService} from './dynamodbClient';
+import {ConnectionOptions} from './types';
 
 class TopicDispatcher {
-	constructor(dynamoDbService, options) {
+	private readonly dynamoDbService: DynamoService;
+	private readonly options: ConnectionOptions;
+
+	constructor(
+		dynamoDbService: DynamoService,
+		options: ConnectionOptions
+	) {
 		this.dynamoDbService = dynamoDbService
 		this.options = options
 	}
 
-	async getSubscribers(topic) {
-		return this
+	async getSubscribers(topic: string) {
+		const subs = await this
 			.dynamoDbService
 			.querySubscribersForTopic(topic)
+		if (subs === undefined) {
+			return []
+		}
+		return subs
 	}
 
-	async pushMessageToConnectionsForTopic(topic, data) {
+	async pushMessageToConnectionsForTopic(topic: string, data: any) {
 		const subscribers = await this.getSubscribers(topic)
 		const promises = subscribers.map(async ({ connectionId, subscriptionId }) => {
 			const topicConnectionManager = new ConnectionManager(
@@ -36,7 +48,7 @@ class TopicDispatcher {
 		return Promise.all(promises)
 	}
 
-	async postMessage(topic, data) {
+	async postMessage(topic: string, data: any) {
 		return this
 			.dynamoDbService
 			.postMessageToTopic(topic, data)

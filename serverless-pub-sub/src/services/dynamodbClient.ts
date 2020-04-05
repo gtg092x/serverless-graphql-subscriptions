@@ -1,5 +1,10 @@
-import DynamoDB from 'aws-sdk/clients/dynamodb'
+import DynamoDB, {
+	BatchWriteItemRequestMap,
+	DocumentClient,
+	WriteRequest
+} from 'aws-sdk/clients/dynamodb'
 import uuid from 'uuid';
+import {TopicRow, TopicSubscriptionPayload} from './types';
 
 const localConfig = {
 	region: 'localhost',
@@ -17,8 +22,18 @@ const remoteConfig = {
 	region: AWS_REGION
 }
 
+export interface DynamoTableConfig {
+	topicsTable: string;
+	eventsTable: string;
+}
+
+const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + 60 * 60 * 2
+
 export class DynamoService {
-	constructor(tableConfig) {
+	private readonly tableConfig: DynamoTableConfig;
+	private readonly client: DocumentClient;
+
+	constructor(tableConfig: DynamoTableConfig) {
 		this.client = new DynamoDB.DocumentClient(IS_OFFLINE ? localConfig : remoteConfig)
 		this.tableConfig = tableConfig
 	}
@@ -31,7 +46,7 @@ export class DynamoService {
 		return this.tableConfig.eventsTable
 	}
 
-	async getInitialConnectionRecordsForConnectionId(connectionId) {
+	async getInitialConnectionRecordsForConnectionId(connectionId: string) {
 		const { Item } = await this.client.get({
 			TableName: this.getTopicsTable(),
 			Key: {
@@ -42,7 +57,7 @@ export class DynamoService {
 		return Item
 	}
 
-	async queryTopicsForConnectionId(connectionId) {
+	async queryTopicsForConnectionId(connectionId: string) {
 		const { Items: topics } = await this.client.query({
 			ExpressionAttributeValues: {
 				':connectionId': connectionId
@@ -55,7 +70,7 @@ export class DynamoService {
 		return topics
 	}
 
-	async querySubscribersForTopic(topic) {
+	async querySubscribersForTopic(topic: string) {
 		const { Items: clients } = await this.client.query({
 			ExpressionAttributeValues: {
 				':topic': topic
@@ -67,36 +82,44 @@ export class DynamoService {
 		return clients
 	}
 
-	async removeItems(RequestItems) {
+	async removeItems(RequestItems: BatchWriteItemRequestMap) {
 		const res = await this.client.batchWrite({
 			RequestItems
 		}).promise()
 		if(res.UnprocessedItems && res.UnprocessedItems.length) {
-			return this.removeItems(res.UnprocessedItems)
+			this.removeItems(res.UnprocessedItems)
+			return
 		}
 	}
 
-	async unsubscribeTopics(topics) {
-		return this.removeItems({
+	async unsubscribeTopics(topics: TopicRow[]) {
+		await this.removeItems({
 			[this.getTopicsTable()]: topics.map(({ topic, connectionId }) => ({
 				DeleteRequest: { Key: { topic, connectionId } }
-			}))
+			}) as WriteRequest)
 		})
+		return
 	}
 
-	async putSubscriptionForConnectionId(connectionId, ttl, { topic, subscriptionId }) {
+	async putSubscriptionForConnectionId(
+		connectionId: string,
+		ttl: number | undefined,
+		{ topic, subscriptionId }: TopicSubscriptionPayload,
+	) {
 		return this.client.put({
 			Item: {
 				topic,
 				subscriptionId,
 				connectionId,
-				ttl: typeof ttl === 'number' ? ttl : Math.floor(Date.now() / 1000) + 60 * 60 * 2,
+				ttl: typeof ttl === 'number' ? ttl : twoHoursFromNow(),
 			},
 			TableName: this.getTopicsTable(),
 		}).promise()
 	}
 
-	async postMessageToTopic(topic, data) {
+	static beforePublish: (payload: any) => any;
+
+	async postMessageToTopic(topic: string, data: any) {
 		const payload = {
 			data,
 			topic,
