@@ -27,11 +27,15 @@ const handleMessage = async (
 	const pubSub = options.pubSub
 
 	if (options.onOperation) {
-		const additionalParams = await options.onOperation({
-			type: operation ? operation.type : null,
-			id: connectionManager.connectionId,
-			payload: operation ? operation.payload : null,
-		}, operation.body, connectionManager)
+		const additionalParams = await options.onOperation(
+			{
+				type: operation ? operation.type : null,
+				id: connectionManager.connectionId,
+				payload: operation ? operation.payload : null,
+			},
+			operation.body,
+			connectionManager,
+		)
 
 		Object.assign(options, additionalParams)
 	}
@@ -71,9 +75,12 @@ const handleMessage = async (
 
 	try {
 		const initialConnection = await connectionManager.getConnectionRecords()
-		const additionalContext = (initialConnection && initialConnection.context)
+		let additionalContext = (initialConnection && initialConnection.context)
 			? initialConnection.context
 			: {}
+		if (options.onConnectHydrate) {
+			additionalContext = await options.onConnectHydrate(additionalContext)
+		}
 		await subscribe({
 			document: graphqlDocument,
 			schema,
@@ -102,6 +109,7 @@ interface WsOptions {
  	schema?: GraphQLSchema,
 	onConnect?: Function;
 	onOperation?: Function;
+	onConnectHydrate?: Function;
 	context? : any,
 	onDisconnect?: Function;
 }
@@ -154,7 +162,9 @@ export const createWebSocketHandler = (
 							await connectionManager.unsubscribe()
 							return DEFAULT_UNAUTHORIZED
 						}
-						await connectionManager.setConnectionContext(connectionContext)
+						await connectionManager.setConnectionContext(
+							connectionContext,
+						)
 					}
 					await connectionManager.sendMessage({ type: 'connection_ack' })
 					return DEFAULT_OK
