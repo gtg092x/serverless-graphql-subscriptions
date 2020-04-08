@@ -22,12 +22,13 @@
 		"sourceMap": true,
 		"strict": true
 	},
-	"include": ["src", "../serverless-pub-sub/src"],
+	"files": ["src", "../serverless-pub-sub/src"],
 	"exclude": [
 		"dist",
 		"node_modules",
 		"**/__tests__/**",
 		"**/__mocks__/**",
-		"**/fixtures/**"
+		"**/fixtures/**",
+		"../serverless-pub-sub/tsconfig.json"
 	]
 }

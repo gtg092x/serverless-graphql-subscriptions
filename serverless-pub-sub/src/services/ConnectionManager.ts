@@ -5,7 +5,7 @@ import {ConnectionOptions, TopicRow, TopicSubscriptionPayload} from './types';
 
 
 class ConnectionManager {
-	private connectionId: string;
+	connectionId: string;
 	private gatewayService: ApiGatewayService;
 	private dynamoDbService: DynamoService;
 	private ttl?: number;
@@ -22,8 +22,12 @@ class ConnectionManager {
 	}
 
 	async getConnectionRecords() {
-		return this.dynamoDbService
+		const record = await this.dynamoDbService
 			.getInitialConnectionRecordsForConnectionId(this.connectionId)
+		return record ? {
+			...record,
+			context: record.context ? JSON.parse(record.context) : undefined,
+		} : record
 	}
 
 	async getTopics(): Promise<TopicRow[]> {
@@ -41,23 +45,31 @@ class ConnectionManager {
 			.unsubscribeTopics(topics)
 	}
 
+	async setConnectionContext(context: any) {
+		return this.dynamoDbService.patchSubscriptionForConnectionId(
+			this.connectionId,
+			{ context: JSON.stringify(context) }
+		)
+	}
+
 	async sendMessage(message: any) {
 		return this.gatewayService
 			.postToConnection(this.connectionId, message)
 	}
 
-	async subscribe({ topic, subscriptionId }: TopicSubscriptionPayload) {
+	async subscribe({ context, topic, subscriptionId }: TopicSubscriptionPayload) {
 		const ttl = this.ttl
 		return this.dynamoDbService.putSubscriptionForConnectionId(
 			this.connectionId,
 			ttl,
-			{ topic, subscriptionId }
+			{ topic, subscriptionId, context: JSON.stringify(context) }
 		)
 	}
 
-	async connect() {
+	async connect(additionalContext?: any) {
 		return this.subscribe({
-			topic: 'INITIAL_CONNECTION'
+			topic: 'INITIAL_CONNECTION',
+			context: additionalContext,
 		})
 	}
 }

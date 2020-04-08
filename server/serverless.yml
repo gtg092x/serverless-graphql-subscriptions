@@ -85,6 +85,8 @@ resources:
         AttributeDefinitions:
           - AttributeName: topic
             AttributeType: S
+          - AttributeName: context
+            AttributeType: S
           - AttributeName: connectionId
             AttributeType: S
         KeySchema:

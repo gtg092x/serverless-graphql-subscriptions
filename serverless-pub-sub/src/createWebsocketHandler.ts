@@ -4,9 +4,12 @@ import {ServerlessPubSub} from './ServerlessPubSub';
 import {APIGatewayEvent} from 'aws-lambda';
 
 const DEFAULT_OK = { statusCode: 200, body: '' }
+const DEFAULT_UNAUTHORIZED = { statusCode: 401, body: 'Connection not authorized' }
 
 interface WSOperation {
 	operationName: string;
+	type: string;
+	body: any;
 	id: string;
 	payload: {
 		query: any,
@@ -17,11 +20,27 @@ interface WSOperation {
 
 const handleMessage = async (
 	connectionManager: ConnectionManager,
-	pubSub: ServerlessPubSub,
-	schemaPromise: GraphQLSchema | Promise<GraphQLSchema>,
+	options: WsOptions,
 	operation: WSOperation
 ) => {
-	const schema = await schemaPromise
+	const schema = options.schema
+	const pubSub = options.pubSub
+
+	if (options.onOperation) {
+		const additionalParams = await options.onOperation({
+			type: operation ? operation.type : null,
+			id: connectionManager.connectionId,
+			payload: operation ? operation.payload : null,
+		}, operation.body, connectionManager)
+
+		Object.assign(options, additionalParams)
+	}
+
+
+	if (schema === undefined) {
+		throw new Error('Schema not loaded')
+	}
+
 	const client = await connectionManager.getConnectionRecords()
 	if(!client) {
 		throw new Error('Connection records not found')
@@ -51,6 +70,10 @@ const handleMessage = async (
 	pubSub.setSubscriptionId(operation.id)
 
 	try {
+		const initialConnection = await connectionManager.getConnectionRecords()
+		const additionalContext = (initialConnection && initialConnection.context)
+			? initialConnection.context
+			: {}
 		await subscribe({
 			document: graphqlDocument,
 			schema,
@@ -58,6 +81,7 @@ const handleMessage = async (
 			operationName: operationName,
 			variableValues: variables,
 			contextValue: {
+				...additionalContext,
 				pubSub,
 			}
 		})
@@ -72,36 +96,66 @@ const handleMessage = async (
 	return DEFAULT_OK
 }
 
+interface WsOptions {
+ 	pubSub: ServerlessPubSub;
+ 	ttl?: number;
+ 	schema?: GraphQLSchema,
+	onConnect?: Function;
+	onOperation?: Function;
+	context? : any,
+	onDisconnect?: Function;
+}
+
+async function handleConnection(connectionManager: ConnectionManager) {
+	await connectionManager.connect()
+	return DEFAULT_OK
+}
+
 export const createWebSocketHandler = (
-	schemaPromise: GraphQLSchema | Promise<GraphQLSchema | void>,
-	options: { pubSub: ServerlessPubSub, ttl?: number },
+	options: WsOptions,
 ) => async (event: APIGatewayEvent) => {
-	const schema = await schemaPromise
-	if (schema === undefined) {
-		throw new Error('Schema not loaded')
-	}
-	const { pubSub } = options
+
 	if (!(event.requestContext && event.requestContext.connectionId)) {
 		throw new Error('Invalid event. Missing `connectionId` parameter.')
 	}
+
+	const {
+		pubSub,
+	} = options
+
+	const operation = event.body ? JSON.parse(event.body) : null
 	const connectionId = event.requestContext.connectionId
 	const route = event.requestContext.routeKey
 	const connectionManager = pubSub.createAndSetConnectionManager(connectionId)
 
 	switch (route) {
 		case '$connect':
-			await connectionManager.connect()
-			return DEFAULT_OK
+			return handleConnection(connectionManager)
 		case '$disconnect':
 			await connectionManager.unsubscribe()
+			if (options.onDisconnect) {
+				await options.onDisconnect(connectionManager, {})
+			}
 			return DEFAULT_OK
 		case '$default':
-			if (!event.body) {
+			if (!operation) {
 				return DEFAULT_OK
 			}
-			const operation = JSON.parse(event.body)
+
 			switch (operation.type) {
 				case 'connection_init': {
+					const {
+						onConnect,
+					} = options
+					let connectionContext
+					if (onConnect) {
+						connectionContext = await onConnect(operation.payload, connectionManager, {})
+						if (connectionContext === false) {
+							await connectionManager.unsubscribe()
+							return DEFAULT_UNAUTHORIZED
+						}
+						await connectionManager.setConnectionContext(connectionContext)
+					}
 					await connectionManager.sendMessage({ type: 'connection_ack' })
 					return DEFAULT_OK
 				}
@@ -109,7 +163,7 @@ export const createWebSocketHandler = (
 					return DEFAULT_OK
 				}
 				default:
-					return handleMessage(connectionManager, pubSub, schema, operation)
+					return handleMessage(connectionManager, options, operation)
 			}
 		default:
 			throw new Error(`Route ${route} is not supported`)

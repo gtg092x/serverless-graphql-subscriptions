@@ -9,7 +9,7 @@ import {
 	Publisher,
 	Subscription,
 	buildSchema,
-	Query
+	Query, Ctx
 } from 'type-graphql';
 
 @Resolver()
@@ -26,7 +26,11 @@ class Root {
 	@Subscription({
 		topics: "MY_TOPIC"
 	})
-	listenMessage(root: { listenMessage: string }): string {
+	listenMessage(
+		root: { listenMessage: string },
+		@Ctx() context: any,
+	): string {
+		console.log('CONTEXT', context)
 		return root.listenMessage
 	}
 

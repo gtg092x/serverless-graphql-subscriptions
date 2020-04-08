@@ -14,7 +14,9 @@ import App from './App'
 const http_endpoint = process.env.REACT_APP_HTTP_ENDPOINT
 const ws_endpoint = process.env.REACT_APP_SUBSCRIPTION_ENDPOINT
 
-const subClient = new SubscriptionClient(ws_endpoint, { lazy: true, reconnect: true }, null, [])
+const subClient = new SubscriptionClient(ws_endpoint, { connectionParams: {
+	auth: 'MY_AUTH'
+	}, lazy: true, reconnect: true }, null, [])
 const wsLink = new WebSocketLink(subClient)
 const httpLink = new HttpLink({ uri: http_endpoint })
 

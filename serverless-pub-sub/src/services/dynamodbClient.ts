@@ -4,7 +4,7 @@ import DynamoDB, {
 	WriteRequest
 } from 'aws-sdk/clients/dynamodb'
 import uuid from 'uuid';
-import {TopicRow, TopicSubscriptionPayload} from './types';
+import {TopicConextPayload, TopicRow, TopicSubscriptionPayload} from './types';
 
 const localConfig = {
 	region: 'localhost',
@@ -104,14 +104,31 @@ export class DynamoService {
 	async putSubscriptionForConnectionId(
 		connectionId: string,
 		ttl: number | undefined,
-		{ topic, subscriptionId }: TopicSubscriptionPayload,
+		{ topic, subscriptionId, context }: TopicSubscriptionPayload,
 	) {
 		return this.client.put({
 			Item: {
 				topic,
 				subscriptionId,
 				connectionId,
+				context,
 				ttl: typeof ttl === 'number' ? ttl : twoHoursFromNow(),
+			},
+			TableName: this.getTopicsTable(),
+		}).promise()
+	}
+
+	async patchSubscriptionForConnectionId(
+		connectionId: string,
+		{ context }: TopicConextPayload,
+	) {
+		return this.client.update({
+			Key: {
+				connectionId,
+				topic: 'INITIAL_CONNECTION'
+			},
+			AttributeUpdates: {
+				context,
 			},
 			TableName: this.getTopicsTable(),
 		}).promise()
