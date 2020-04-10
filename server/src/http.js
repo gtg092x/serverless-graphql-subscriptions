@@ -1,6 +1,6 @@
 import { createSchema, pubSub } from './schema'
 import { ApolloServer } from 'apollo-server-lambda'
-import { DynamoService } from '../../serverless-pub-sub/src'
+import { DynamoService } from 'serverless-graphql-pubsub'
 import { handler as publish } from './dynamo'
 
 const {

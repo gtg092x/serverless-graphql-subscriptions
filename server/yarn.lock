@@ -2193,6 +2193,21 @@ aws-sdk@^2.524.0, aws-sdk@^2.642.0, aws-sdk@^2.7.0:
     uuid "3.3.2"
     xml2js "0.4.19"
 
+aws-sdk@^2.653.0:
+  version "2.656.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.656.0.tgz#0d74664ddbf30701073be9f9913ee7266afef3b4"
+  integrity sha512-UzqDvvt6i7gpuzEdK0GT/JOfBJcsCPranzZWdQ9HR4+5E0m5kf5gybZ6OX+UseIAE2/WND6Dv0aHgiI21AKenw==
+  dependencies:
+    buffer "4.9.1"
+    events "1.1.1"
+    ieee754 "1.1.13"
+    jmespath "0.15.0"
+    querystring "0.2.0"
+    sax "1.2.1"
+    url "0.10.3"
+    uuid "3.3.2"
+    xml2js "0.4.19"
+
 axios@^0.19.2:
   version "0.19.2"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.19.2.tgz#3ea36c5d8818d0d5f8a8a97a6d36b86cdc00cb27"
@@ -7029,6 +7044,17 @@ serverless-dynamodb-local@^0.2.38:
     bluebird "^3.4.6"
     dynamodb-localhost "0.0.9"
     lodash "^4.17.0"
+
+serverless-graphql-pubsub@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/serverless-graphql-pubsub/-/serverless-graphql-pubsub-1.0.2.tgz#8c25ffe3c0d88acb073afa3a1d593b5199317cff"
+  integrity sha512-JodQuds1OEIjKrnBxSN29ILYIgn4leNCBSfTm3lWk+FzryZ8xjO7CVLpMZqS+o+WUXnG3FqIFEmEOUll+pS2BA==
+  dependencies:
+    aws-sdk "^2.653.0"
+    graphql "^14.3.0"
+    graphql-subscriptions "^1.1.0"
+    iterall "^1.3.0"
+    uuid "^3.3.3"
 
 serverless-offline@^5.10.1:
   version "5.12.1"

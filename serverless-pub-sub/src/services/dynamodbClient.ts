@@ -6,16 +6,8 @@ import DynamoDB, {
 import uuid from 'uuid';
 import {TopicConextPayload, TopicRow, TopicSubscriptionPayload} from './types';
 
-const localConfig = {
-	region: 'localhost',
-	endpoint: 'http://localhost:8000',
-	accessKeyId: 'DEFAULT_ACCESS_KEY',
-	secretAccessKey: 'DEFAULT_SECRET'
-}
-
 const {
 	AWS_REGION,
-	IS_OFFLINE,
 } = process.env
 
 const remoteConfig = {
@@ -25,6 +17,7 @@ const remoteConfig = {
 export interface DynamoTableConfig {
 	topicsTable: string;
 	eventsTable: string;
+	dynamoOptions?: DocumentClient.DocumentClientOptions & DynamoDB.Types.ClientConfiguration;
 }
 
 const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + 60 * 60 * 2
@@ -34,7 +27,7 @@ export class DynamoService {
 	private readonly client: DocumentClient;
 
 	constructor(tableConfig: DynamoTableConfig) {
-		this.client = new DynamoDB.DocumentClient(IS_OFFLINE ? localConfig : remoteConfig)
+		this.client = new DynamoDB.DocumentClient(tableConfig.dynamoOptions)
 		this.tableConfig = tableConfig
 	}
 

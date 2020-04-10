@@ -32,7 +32,7 @@ custom:
     stages:
       - dev
     start:
-      port: 8000
+      port: 8001
       inMemory: true
       heapInitial: 200m
       heapMax: 1g
@@ -84,8 +84,6 @@ resources:
           WriteCapacityUnits: 1
         AttributeDefinitions:
           - AttributeName: topic
-            AttributeType: S
-          - AttributeName: context
             AttributeType: S
           - AttributeName: connectionId
             AttributeType: S

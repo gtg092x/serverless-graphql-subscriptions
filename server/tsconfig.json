@@ -1,9 +1,6 @@
 {
 	"compilerOptions": {
-		"rootDirs": [
-			"src",
-			"../serverless-pub-sub/src"
-		],
+		"rootDir": "src",
 		"target": "es2017",
 		"module": "commonjs",
 		"outDir": "dist",
@@ -22,13 +19,12 @@
 		"sourceMap": true,
 		"strict": true
 	},
-	"files": ["src", "../serverless-pub-sub/src"],
+	"include": ["src"],
 	"exclude": [
 		"dist",
 		"node_modules",
 		"**/__tests__/**",
 		"**/__mocks__/**",
-		"**/fixtures/**",
-		"../serverless-pub-sub/tsconfig.json"
+		"**/fixtures/**"
 	]
 }

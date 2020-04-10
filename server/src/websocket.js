@@ -1,5 +1,5 @@
 import { createSchema, pubSub } from './schema'
-import { createWebSocketHandler } from '../../serverless-pub-sub/src'
+import { createWebSocketHandler } from 'serverless-graphql-pubsub'
 
 const schemaPromise = createSchema().catch(console.error)
 
