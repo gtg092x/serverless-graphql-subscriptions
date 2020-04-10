@@ -23,8 +23,6 @@ const handleMessage = async (
 	options: WsOptions,
 	operation: WSOperation
 ) => {
-	const schema = options.schema
-	const pubSub = options.pubSub
 
 	if (options.onOperation) {
 		const additionalParams = await options.onOperation(
@@ -40,6 +38,8 @@ const handleMessage = async (
 		Object.assign(options, additionalParams)
 	}
 
+	const schema = options.schema
+	const pubSub = options.pubSub
 
 	if (schema === undefined) {
 		throw new Error('Schema not loaded')
