@@ -10,9 +10,6 @@ const {
 	AWS_REGION,
 } = process.env
 
-const remoteConfig = {
-	region: AWS_REGION
-}
 
 export interface DynamoTableConfig {
 	topicsTable: string;
@@ -115,13 +112,19 @@ export class DynamoService {
 		connectionId: string,
 		{ context }: TopicConextPayload,
 	) {
+		const ContextUpdate: any = {
+			Action: context ? 'PUT' : 'DELETE',
+		}
+		if (context) {
+			ContextUpdate.Value = context
+		}
 		return this.client.update({
 			Key: {
 				connectionId,
 				topic: 'INITIAL_CONNECTION'
 			},
 			AttributeUpdates: {
-				context,
+				context: ContextUpdate,
 			},
 			TableName: this.getTopicsTable(),
 		}).promise()

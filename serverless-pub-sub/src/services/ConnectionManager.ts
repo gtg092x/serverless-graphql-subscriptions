@@ -59,10 +59,14 @@ class ConnectionManager {
 
 	async subscribe({ context, topic, subscriptionId }: TopicSubscriptionPayload) {
 		const ttl = this.ttl
+		const item: any = { topic, subscriptionId }
+		if (context) {
+			item.context = JSON.stringify(context)
+		}
 		return this.dynamoDbService.putSubscriptionForConnectionId(
 			this.connectionId,
 			ttl,
-			{ topic, subscriptionId, context: JSON.stringify(context) }
+			item,
 		)
 	}
 
