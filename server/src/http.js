@@ -1,10 +1,10 @@
 import { createSchema, pubSub } from './schema'
 import { ApolloServer } from 'apollo-server-lambda'
-import { DynamoService } from 'serverless-graphql-pubsub'
+import { DynamoService } from '../../serverless-pub-sub/src'
 import { handler as publish } from './dynamo'
 
 const {
-	IS_OFFLINE
+	IS_OFFLINE = true,
 } = process.env
 
 if (IS_OFFLINE) {

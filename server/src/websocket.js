@@ -1,17 +1,19 @@
 import { createSchema, pubSub } from './schema'
-import { createWebSocketHandler } from 'serverless-graphql-pubsub'
+import { createWebSocketHandler } from '../../serverless-pub-sub/src'
 
-const schemaPromise = createSchema().catch(console.error)
+const schema = createSchema()
 
 export const handler = createWebSocketHandler({
 	onConnect: async (auth) => {
-		console.log('AUTH', auth)
+
 		return {
 			user: 'matt'
 		}
 	},
+	async onConnectHydrate (ctx) {
+		return ctx
+	},
 	onOperation: async () => {
-		const schema = await schemaPromise
 		return ({
 			schema
 		})

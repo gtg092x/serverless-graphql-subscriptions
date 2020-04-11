@@ -14,7 +14,7 @@
 		"graphql-subscriptions": "^1.1.0",
 		"iterall": "^1.3.0",
 		"reflect-metadata": "^0.1.13",
-		"serverless-graphql-pubsub": "^1.0.2",
+		"serverless-graphql-pubsub": "^1.0.5",
 		"type-graphql": "^0.17.6",
 		"uuid": "^3.3.3"
 	},

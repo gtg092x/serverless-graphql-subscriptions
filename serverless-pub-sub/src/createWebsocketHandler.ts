@@ -94,6 +94,7 @@ const handleMessage = async (
 		})
 		await pubSub.storeAllSubscriptions()
 	} catch(err) {
+		console.error(err)
 		await connectionManager.sendMessage({
 			id: operation.id,
 			payload: err,

@@ -2,7 +2,11 @@ import { PubSubEngine } from 'graphql-subscriptions';
 import { $$asyncIterator } from 'iterall';
 import TopicDispatcher from './services/TopicDispatcher';
 import ConnectionManager from './services/ConnectionManager';
-import {DynamoService, DynamoTableConfig} from './services/dynamodbClient';
+import {
+	DynamoService,
+	DynamoTableConfig,
+	LoggingInputOptions, LoggingOptions,
+} from './services/dynamodbClient';
 import {ConnectionOptions} from './services/types';
 
 interface IteratorType {
@@ -42,7 +46,7 @@ class PubSubAsyncIterator implements AsyncIterator<IteratorType>{
 	subscribeAll() {
 		if (!this.subscriptionPromises) {
 			this.subscriptionPromises = Promise.all(this.eventsArray.map(
-				eventName => this.pubSub.subscribe(eventName),
+				eventName => this.pubSub._subscribe(eventName),
 			));
 		}
 		return this.subscriptionPromises
@@ -54,6 +58,8 @@ class PubSubAsyncIterator implements AsyncIterator<IteratorType>{
 	}
 }
 
+const noop = () => undefined
+
 export class ServerlessPubSub extends PubSubEngine {
 	private readonly topicDispatcher: TopicDispatcher;
 	private readonly dynamoDbService: DynamoService;
@@ -62,10 +68,11 @@ export class ServerlessPubSub extends PubSubEngine {
 	private connectionManager?: ConnectionManager;
 	private subscriptionId?: string | number;
 
-	constructor(options: ConnectionOptions & DynamoTableConfig) {
+	constructor(options: ConnectionOptions & DynamoTableConfig & LoggingInputOptions) {
 		super()
 		this.iterators = []
-		this.dynamoDbService = new DynamoService(options)
+		options.logger = options.logger ? options.logger : noop;
+		this.dynamoDbService = new DynamoService(options as ConnectionOptions & DynamoTableConfig & LoggingOptions)
 		this.topicDispatcher = new TopicDispatcher(this.dynamoDbService, options)
 		this.options = options
 	}
@@ -101,7 +108,13 @@ export class ServerlessPubSub extends PubSubEngine {
 		return this.subscriptionId
 	}
 
-	async subscribe(
+	subscribe (
+		trigger: string,
+	): Promise<number> {
+		throw new Error('Subscribe is not implemented on ServerlessPubSub')
+	}
+
+	async _subscribe(
 		trigger: string,
 	) {
 
@@ -135,6 +148,9 @@ export class ServerlessPubSub extends PubSubEngine {
 	}
 
 	storeAllSubscriptions() {
+		if (!this.iterators || this.iterators.length === 0) {
+			throw new Error('No iterators found, did you forget to subscribe to the pub sub?');
+		}
 		return Promise.all(this.iterators.map(i => i.subscribeAll()))
 	}
 

@@ -1,53 +1,42 @@
-import "reflect-metadata";
-// @ts-ignore
 import {default as configurePubSub} from './configurePubSub'
-import {
-	Arg,
-	Mutation,
-	Resolver,
-	PubSub,
-	Publisher,
-	Subscription,
-	buildSchema,
-	Query, Ctx
-} from 'type-graphql';
 
-@Resolver()
-class Root {
-	@Mutation(() => String)
-	async sendMessage (
-		@Arg('message') message: string,
-		@PubSub("MY_TOPIC") publish: Publisher<{ listenMessage: string }>,
-	) {
-		await publish({ listenMessage: message })
-		return message
+import { makeExecutableSchema } from 'graphql-tools'
+import { ApolloServer, gql } from 'apollo-server-lambda'
+
+const typeDefs = gql`
+	type Query {
+		_: String
 	}
-
-	@Subscription({
-		topics: "MY_TOPIC"
-	})
-	listenMessage(
-		root: { listenMessage: string },
-		@Ctx() context: any,
-	): string {
-		console.log('CONTEXT', context)
-		return root.listenMessage
+	type Mutation {
+		sendMessage(message: String!): String
 	}
+	type Subscription {
+		listenMessage: String
+	}
+`
 
-	@Query(() => String)
-	async _ (): Promise<string> {
-		return ""
+const resolvers = {
+	Mutation: {
+		sendMessage: async (root, { message }, { pubSub }) => {
+			await pubSub.publish('MY_TOPIC', { listenMessage: message })
+			return message
+		}
+	},
+	Subscription: {
+		listenMessage: {
+			async subscribe ({ id }, args, { pubSub }) {
+				return pubSub.asyncIterator('MY_TOPIC')
+			}
+		}
 	}
 }
 
 export const pubSub = configurePubSub()
 
 export const createSchema = () => {
-	return buildSchema({
-		pubSub,
-		resolvers: [
-			Root,
-		]
+	return makeExecutableSchema({
+		typeDefs,
+		resolvers,
 	})
 }
 

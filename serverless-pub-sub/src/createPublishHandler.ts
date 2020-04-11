@@ -3,13 +3,24 @@ import {ServerlessPubSub} from './ServerlessPubSub';
 
 const parseNewEvent = DynamoDB.Converter.unmarshall
 
-export const createPublishHandler = ({ pubSub, isOffline }: { pubSub: ServerlessPubSub, isOffline: boolean }) => async (event: any) => {
-	const subscruptionEvent = event.Records[0]
-	if(subscruptionEvent.eventName !== 'INSERT') {
-		throw new Error('Invalid event. Wrong dynamodb event type, can publish only `INSERT` events to subscribers.')
+interface Options {
+	pubSub: ServerlessPubSub;
+	isOffline: boolean;
+	logger?: Function,
+}
+
+const noop = () => undefined
+
+export const createPublishHandler = (options: Options) => async (event: any) => {
+	const { pubSub, isOffline, logger = noop } = options
+	const subscription = event.Records[0]
+	if(subscription.eventName !== 'INSERT') {
+		logger(event)
+		logger('Invalid event. Wrong dynamodb event type, can publish only `INSERT` events to subscribers.')
+		return { statusCode: 200, body: '' }
 	}
 	const { topic, data } = isOffline ?
-		subscruptionEvent.dynamodb.NewImage :
-		parseNewEvent(subscruptionEvent.dynamodb.NewImage)
+		subscription.dynamodb.NewImage :
+		parseNewEvent(subscription.dynamodb.NewImage)
 	return pubSub.pushMessageToConections(topic, data)
 }

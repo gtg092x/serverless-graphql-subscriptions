@@ -6,10 +6,13 @@ import DynamoDB, {
 import uuid from 'uuid';
 import {TopicConextPayload, TopicRow, TopicSubscriptionPayload} from './types';
 
-const {
-	AWS_REGION,
-} = process.env
+export interface LoggingInputOptions {
+	logger?: Function;
+}
 
+export interface LoggingOptions {
+	logger: Function;
+}
 
 export interface DynamoTableConfig {
 	topicsTable: string;
@@ -17,13 +20,13 @@ export interface DynamoTableConfig {
 	dynamoOptions?: DocumentClient.DocumentClientOptions & DynamoDB.Types.ClientConfiguration;
 }
 
-const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + 60 * 60 * 2
+const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + (60 * 60 * 2)
 
 export class DynamoService {
-	private readonly tableConfig: DynamoTableConfig;
+	private readonly tableConfig: DynamoTableConfig & LoggingOptions;
 	private readonly client: DocumentClient;
 
-	constructor(tableConfig: DynamoTableConfig) {
+	constructor(tableConfig: DynamoTableConfig & LoggingOptions) {
 		this.client = new DynamoDB.DocumentClient(tableConfig.dynamoOptions)
 		this.tableConfig = tableConfig
 	}
@@ -74,7 +77,7 @@ export class DynamoService {
 
 	async removeItems(RequestItems: BatchWriteItemRequestMap) {
 		const res = await this.client.batchWrite({
-			RequestItems
+			RequestItems,
 		}).promise()
 		if(res.UnprocessedItems && res.UnprocessedItems.length) {
 			this.removeItems(res.UnprocessedItems)
@@ -83,6 +86,7 @@ export class DynamoService {
 	}
 
 	async unsubscribeTopics(topics: TopicRow[]) {
+		this.log('Unsubscribing Topics ', topics)
 		await this.removeItems({
 			[this.getTopicsTable()]: topics.map(({ topic, connectionId }) => ({
 				DeleteRequest: { Key: { topic, connectionId } }
@@ -91,11 +95,16 @@ export class DynamoService {
 		return
 	}
 
+	log (...params: any[]) {
+		this.tableConfig.logger(...params)
+	}
+
 	async putSubscriptionForConnectionId(
 		connectionId: string,
 		ttl: number | undefined,
 		{ topic, subscriptionId, context }: TopicSubscriptionPayload,
 	) {
+		this.log('Subscribing to topic ' + topic)
 		return this.client.put({
 			Item: {
 				topic,
