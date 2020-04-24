@@ -6,8 +6,6 @@ import DynamoDB, {
 import uuid from 'uuid';
 import {TopicConextPayload, TopicRow, TopicSubscriptionPayload} from './types';
 
-const formatNewEvent = DynamoDB.Converter.marshall
-
 export interface LoggingInputOptions {
 	logger?: Function;
 }
@@ -20,6 +18,16 @@ export interface DynamoTableConfig {
 	topicsTable: string;
 	eventsTable: string;
 	dynamoOptions?: DocumentClient.DocumentClientOptions & DynamoDB.Types.ClientConfiguration;
+}
+
+function iter(o: any, map: Function) {
+	Object.keys(o).forEach(function (k) {
+		if (o[k] !== null && typeof o[k] === 'object') {
+			iter(o[k], map);
+			return;
+		}
+		o[k] = map(o[k]);
+	});
 }
 
 const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + (60 * 60 * 2)
@@ -152,8 +160,14 @@ export class DynamoService {
 		if(DynamoService.beforePublish) {
 			await DynamoService.beforePublish(payload)
 		}
+		iter(payload, (value: any) => {
+			if (value instanceof Date) {
+				return value.toISOString()
+			}
+			return value
+		})
 		return this.client.put({
-			Item: formatNewEvent(payload),
+			Item: payload,
 			TableName: this.getEventsTable(),
 		}).promise()
 	}
