@@ -23,7 +23,7 @@ export interface DynamoTableConfig {
 function iter(o: any, map: Function) {
 	const result: any = {}
 	Object.keys(o).forEach(function (k) {
-		if (o[k] !== null && typeof o[k] === 'object' && o[k].constructor == Object) {
+		if (o[k] !== null && typeof o[k] === 'object' && !(o[k] instanceof Date)) {
 			result[k] = iter(o[k], map);
 			return;
 		}
