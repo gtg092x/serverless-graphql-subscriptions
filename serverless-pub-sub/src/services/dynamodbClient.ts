@@ -21,13 +21,15 @@ export interface DynamoTableConfig {
 }
 
 function iter(o: any, map: Function) {
+	const result: any = {}
 	Object.keys(o).forEach(function (k) {
-		if (o[k] !== null && typeof o[k] === 'object') {
-			iter(o[k], map);
+		if (o[k] !== null && typeof o[k] === 'object' && o[k].constructor == Object) {
+			result[k] = iter(o[k], map);
 			return;
 		}
-		o[k] = map(o[k]);
+		result[k] = map(o[k]);
 	});
+	return result
 }
 
 const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + (60 * 60 * 2)
@@ -152,20 +154,22 @@ export class DynamoService {
 	static beforePublish: (payload: any) => any;
 
 	async postMessageToTopic(topic: string, data: any) {
-		const payload = {
-			data,
-			topic,
-			id: uuid.v4(),
-		}
-		if(DynamoService.beforePublish) {
-			await DynamoService.beforePublish(payload)
-		}
-		iter(payload, (value: any) => {
+		const normalizedData = iter(data, (value: any) => {
 			if (value instanceof Date) {
 				return value.toISOString()
 			}
 			return value
 		})
+		const payload = {
+			data: normalizedData,
+			topic,
+			id: uuid.v4(),
+		}
+
+		if(DynamoService.beforePublish) {
+			await DynamoService.beforePublish(payload)
+		}
+
 		return this.client.put({
 			Item: payload,
 			TableName: this.getEventsTable(),
