@@ -1,6 +1,6 @@
 {
 	"name": "serverless-graphql-pubsub",
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"main": "dist/index.js",
 	"description": "Serverless PubSub Interface",
 	"author": "github.com/gtg092x",
