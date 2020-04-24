@@ -6,6 +6,8 @@ import DynamoDB, {
 import uuid from 'uuid';
 import {TopicConextPayload, TopicRow, TopicSubscriptionPayload} from './types';
 
+const formatNewEvent = DynamoDB.Converter.marshall
+
 export interface LoggingInputOptions {
 	logger?: Function;
 }
@@ -151,7 +153,7 @@ export class DynamoService {
 			await DynamoService.beforePublish(payload)
 		}
 		return this.client.put({
-			Item: payload,
+			Item: formatNewEvent(payload),
 			TableName: this.getEventsTable(),
 		}).promise()
 	}
