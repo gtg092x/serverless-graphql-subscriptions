@@ -22,7 +22,7 @@ const typeDefs = gql`
 const resolvers = {
 	Mutation: {
 		sendMessage: async (root, { message }, { pubSub }) => {
-			await pubSub.publish('MY_TOPIC', { listenMessage: { message, createdAt: new Date() } })
+			await pubSub.publish('MY_TOPIC', { message, createdAt: new Date() })
 			return message
 		}
 	},

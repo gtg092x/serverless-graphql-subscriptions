@@ -20,18 +20,6 @@ export interface DynamoTableConfig {
 	dynamoOptions?: DocumentClient.DocumentClientOptions & DynamoDB.Types.ClientConfiguration;
 }
 
-function iter(o: any, map: Function) {
-	const result: any = {}
-	Object.keys(o).forEach(function (k) {
-		if (o[k] !== null && typeof o[k] === 'object' && !(o[k] instanceof Date)) {
-			result[k] = iter(o[k], map);
-			return;
-		}
-		result[k] = map(o[k]);
-	});
-	return result
-}
-
 const normalizeData = (data: object) => JSON.parse(JSON.stringify(data))
 
 const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + (60 * 60 * 2)
@@ -140,7 +128,7 @@ export class DynamoService {
 			Action: context ? 'PUT' : 'DELETE',
 		}
 		if (context) {
-			ContextUpdate.Value = context
+			ContextUpdate.Value = normalizeData(context)
 		}
 		return this.client.update({
 			Key: {

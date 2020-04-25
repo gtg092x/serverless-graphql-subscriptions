@@ -1,14 +1,31 @@
 import ConnectionManager from './ConnectionManager'
 import {DynamoService} from './dynamodbClient';
 import {ConnectionOptions, IWSOperation} from './types';
-import {execute, GraphQLSchema, parse} from 'graphql';
+import {execute, getOperationAST, GraphQLSchema, parse} from 'graphql';
 
 async function mapDataToPayload(data: any, operation: IWSOperation, schema: GraphQLSchema) {
+	const doc = parse(operation.payload.query)
+	const ast = getOperationAST(doc, operation.operationName)
+	// @ts-ignore
+	const command = (
+		ast &&
+		ast.selectionSet &&
+		ast.selectionSet.selections &&
+		ast.selectionSet.selections[0] &&
+		// @ts-ignore
+		ast.selectionSet.selections[0].name &&
+		// @ts-ignore
+		ast.selectionSet.selections[0].name.value
+	)
+		// @ts-ignore
+		? ast.selectionSet.selections[0].name.value
+		: null
+	const rootValue = command ? {[command]: data} : data
 	const result = await execute({
 		document: parse(operation.payload.query),
 		operationName: operation.operationName,
 		schema,
-		rootValue: data,
+		rootValue,
 	})
 
 	return result.data

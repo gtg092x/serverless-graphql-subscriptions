@@ -48,7 +48,7 @@ class ConnectionManager {
 	async setConnectionContext(context: any) {
 		return this.dynamoDbService.patchSubscriptionForConnectionId(
 			this.connectionId,
-			{ context: JSON.stringify(context) }
+			{ context }
 		)
 	}
 
