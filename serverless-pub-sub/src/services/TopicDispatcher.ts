@@ -24,6 +24,7 @@ async function mapDataToPayload(data: any, operation: IWSOperation, schema: Grap
 	const result = await execute({
 		document: parse(operation.payload.query),
 		operationName: operation.operationName,
+		variableValues: operation.payload.variables,
 		schema,
 		rootValue,
 	})
