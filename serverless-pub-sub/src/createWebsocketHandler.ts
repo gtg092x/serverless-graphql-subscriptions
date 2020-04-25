@@ -2,26 +2,15 @@ import {parse, getOperationAST, validate, subscribe, GraphQLSchema} from 'graphq
 import ConnectionManager from './services/ConnectionManager';
 import {ServerlessPubSub} from './ServerlessPubSub';
 import {APIGatewayEvent} from 'aws-lambda';
+import {IWSOperation} from './services/types';
 
 const DEFAULT_OK = { statusCode: 200, body: '' }
 const DEFAULT_UNAUTHORIZED = { statusCode: 401, body: 'Connection not authorized' }
 
-interface WSOperation {
-	operationName: string;
-	type: string;
-	body: any;
-	id: string;
-	payload: {
-		query: any,
-		variables: any,
-		operationName: string,
-	}
-}
-
 const handleMessage = async (
 	connectionManager: ConnectionManager,
 	options: WsOptions,
-	operation: WSOperation
+	operation: IWSOperation
 ) => {
 
 	if (options.onOperation) {
@@ -92,7 +81,7 @@ const handleMessage = async (
 				pubSub,
 			}
 		})
-		await pubSub.storeAllSubscriptions()
+		await pubSub.storeAllSubscriptions(operation)
 	} catch(err) {
 		console.error(err)
 		await connectionManager.sendMessage({

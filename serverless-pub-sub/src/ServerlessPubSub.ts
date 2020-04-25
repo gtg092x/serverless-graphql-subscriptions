@@ -7,7 +7,8 @@ import {
 	DynamoTableConfig,
 	LoggingInputOptions, LoggingOptions,
 } from './services/dynamodbClient';
-import {ConnectionOptions} from './services/types';
+import {ConnectionOptions, IWSOperation, IWSPayload} from './services/types';
+import {GraphQLSchema} from 'graphql';
 
 interface IteratorType {
 	done: boolean;
@@ -33,6 +34,15 @@ class PubSubAsyncIterator implements AsyncIterator<IteratorType>{
 	}
 
 	async return() {
+		for(let i = 0; i < this.eventsArray.length; i ++) {
+			const eventName = this.eventsArray[i]
+			if (this.pubSub.buffer[eventName] && this.pubSub.buffer[eventName].length) {
+				return {
+					value: this.pubSub.buffer[eventName].shift(),
+					done: false,
+				}
+			}
+		}
 		return { value: undefined, done: true } as IteratorType;
 	}
 
@@ -43,17 +53,16 @@ class PubSubAsyncIterator implements AsyncIterator<IteratorType>{
 
 	private subscriptionPromises?: Promise<(string | number | undefined)[]>;
 
-	subscribeAll() {
+	subscribeAll(operation: IWSOperation) {
 		if (!this.subscriptionPromises) {
 			this.subscriptionPromises = Promise.all(this.eventsArray.map(
-				eventName => this.pubSub._subscribe(eventName),
+				eventName => this.pubSub._subscribe(eventName, operation),
 			));
 		}
 		return this.subscriptionPromises
 	}
 
 	async next() {
-		await this.subscribeAll();
 		return this.return();
 	}
 }
@@ -64,6 +73,7 @@ export class ServerlessPubSub extends PubSubEngine {
 	private readonly topicDispatcher: TopicDispatcher;
 	private readonly dynamoDbService: DynamoService;
 	private readonly iterators: PubSubAsyncIterator[];
+	public readonly buffer: any;
 	private readonly options: ConnectionOptions & DynamoTableConfig;
 	private connectionManager?: ConnectionManager;
 	private subscriptionId?: string | number;
@@ -71,19 +81,27 @@ export class ServerlessPubSub extends PubSubEngine {
 	constructor(options: ConnectionOptions & DynamoTableConfig & LoggingInputOptions) {
 		super()
 		this.iterators = []
+		this.buffer = {}
 		options.logger = options.logger ? options.logger : noop;
 		this.dynamoDbService = new DynamoService(options as ConnectionOptions & DynamoTableConfig & LoggingOptions)
 		this.topicDispatcher = new TopicDispatcher(this.dynamoDbService, options)
 		this.options = options
 	}
+
+	async push(trigger: string, payload: any) {
+		this.buffer[trigger] = this.buffer[trigger] || []
+		this.buffer[trigger].push(payload)
+	}
+
 	async publish(trigger: string, payload: any) {
 		await this.topicDispatcher.postMessage(trigger, payload)
 	}
 	async pushMessageToConections(
 		trigger: string,
 		payload: any,
+		schema: GraphQLSchema,
 	) {
-		await this.topicDispatcher.pushMessageToConnectionsForTopic(trigger, payload)
+		await this.topicDispatcher.pushMessageToConnectionsForTopic(trigger, payload, schema)
 	}
 
 	setConnectionManager(client: ConnectionManager) {
@@ -116,6 +134,7 @@ export class ServerlessPubSub extends PubSubEngine {
 
 	async _subscribe(
 		trigger: string,
+		operation: IWSOperation,
 	) {
 
 		const subscriptionId = this.getSubscriptionId()
@@ -123,6 +142,7 @@ export class ServerlessPubSub extends PubSubEngine {
 		await this.getConnectionManager().subscribe({
 			subscriptionId,
 			topic: trigger,
+			operation,
 		})
 		return Number(subscriptionId)
 	}
@@ -147,11 +167,11 @@ export class ServerlessPubSub extends PubSubEngine {
 		return iterator
 	}
 
-	storeAllSubscriptions() {
+	storeAllSubscriptions(operation: IWSOperation) {
 		if (!this.iterators || this.iterators.length === 0) {
 			throw new Error('No iterators found, did you forget to subscribe to the pub sub?');
 		}
-		return Promise.all(this.iterators.map(i => i.subscribeAll()))
+		return Promise.all(this.iterators.map(i => i.subscribeAll(operation)))
 	}
 
 }

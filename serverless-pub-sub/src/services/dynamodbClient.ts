@@ -32,6 +32,8 @@ function iter(o: any, map: Function) {
 	return result
 }
 
+const normalizeData = (data: object) => JSON.parse(JSON.stringify(data))
+
 const twoHoursFromNow = () => Math.floor(Date.now() / 1000) + (60 * 60 * 2)
 
 export class DynamoService {
@@ -81,7 +83,7 @@ export class DynamoService {
 				':topic': topic
 			},
 			KeyConditionExpression: 'topic = :topic',
-			ProjectionExpression: 'connectionId, subscriptionId',
+			ProjectionExpression: 'connectionId, subscriptionId, operation',
 			TableName: this.getTopicsTable(),
 		}).promise()
 		return clients
@@ -114,7 +116,7 @@ export class DynamoService {
 	async putSubscriptionForConnectionId(
 		connectionId: string,
 		ttl: number | undefined,
-		{ topic, subscriptionId, context }: TopicSubscriptionPayload,
+		{ topic, subscriptionId, context, operation }: TopicSubscriptionPayload,
 	) {
 		this.log('Subscribing to topic ' + topic)
 		return this.client.put({
@@ -122,7 +124,8 @@ export class DynamoService {
 				topic,
 				subscriptionId,
 				connectionId,
-				context,
+				context: context ? normalizeData(context) : {},
+				operation: operation ? normalizeData(operation) : {},
 				ttl: typeof ttl === 'number' ? ttl : twoHoursFromNow(),
 			},
 			TableName: this.getTopicsTable(),
@@ -154,24 +157,19 @@ export class DynamoService {
 	static beforePublish: (payload: any) => any;
 
 	async postMessageToTopic(topic: string, data: any) {
-		const normalizedData = iter(data, (value: any) => {
-			if (value instanceof Date) {
-				return value.toISOString()
-			}
-			return value
-		})
-		const payload = {
+		const normalizedData = normalizeData(data)
+		const item = {
 			data: normalizedData,
 			topic,
 			id: uuid.v4(),
 		}
 
 		if(DynamoService.beforePublish) {
-			await DynamoService.beforePublish(payload)
+			await DynamoService.beforePublish(item)
 		}
 
 		return this.client.put({
-			Item: payload,
+			Item: item,
 			TableName: this.getEventsTable(),
 		}).promise()
 	}

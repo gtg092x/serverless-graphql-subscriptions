@@ -26,7 +26,7 @@ class ConnectionManager {
 			.getInitialConnectionRecordsForConnectionId(this.connectionId)
 		return record ? {
 			...record,
-			context: record.context ? JSON.parse(record.context) : undefined,
+			context: record.context,
 		} : record
 	}
 
@@ -57,11 +57,14 @@ class ConnectionManager {
 			.postToConnection(this.connectionId, message)
 	}
 
-	async subscribe({ context, topic, subscriptionId }: TopicSubscriptionPayload) {
+	async subscribe({ context, topic, subscriptionId, operation }: TopicSubscriptionPayload) {
 		const ttl = this.ttl
 		const item: any = { topic, subscriptionId }
 		if (context) {
-			item.context = JSON.stringify(context)
+			item.context = context
+		}
+		if (operation) {
+			item.operation = operation
 		}
 		return this.dynamoDbService.putSubscriptionForConnectionId(
 			this.connectionId,

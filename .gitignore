@@ -31,3 +31,4 @@ dist
 src/*.d.ts.map
 src/*.d.ts
 !*/types.d.ts
+**/*.scratch.*

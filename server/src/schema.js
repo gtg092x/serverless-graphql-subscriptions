@@ -4,6 +4,10 @@ import { makeExecutableSchema } from 'graphql-tools'
 import { ApolloServer, gql } from 'apollo-server-lambda'
 
 const typeDefs = gql`
+	type Message {
+		message: String
+		createdAt: String
+	}
 	type Query {
 		_: String
 	}
@@ -11,14 +15,14 @@ const typeDefs = gql`
 		sendMessage(message: String!): String
 	}
 	type Subscription {
-		listenMessage: String
+		listenMessage: Message
 	}
 `
 
 const resolvers = {
 	Mutation: {
 		sendMessage: async (root, { message }, { pubSub }) => {
-			await pubSub.publish('MY_TOPIC', { listenMessage: message, createdAt: new Date() })
+			await pubSub.publish('MY_TOPIC', { listenMessage: { message, createdAt: new Date() } })
 			return message
 		}
 	},

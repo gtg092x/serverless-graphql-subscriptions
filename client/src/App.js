@@ -11,7 +11,9 @@ import './styles.css'
 
 const listenMessageSubscription = gql`
 	subscription listenMessage {
-		listenMessage
+		listenMessage {
+			message
+		}
 	}
 `
 const sendMessageMutation = gql`
@@ -26,8 +28,8 @@ function App() {
 	const [username, setUsername] = useState('Anonymous')
 	const messageBoxRef = useRef()
 
-	const onSubscriptionData = ({ subscriptionData: { data: { listenMessage } } }) => {
-		setMessages(messages => [...messages, listenMessage])
+	const onSubscriptionData = ({ subscriptionData: { data: { listenMessage: {message, createdAt} } } }) => {
+		setMessages(messages => [...messages, message])
 		messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight
 	}
 

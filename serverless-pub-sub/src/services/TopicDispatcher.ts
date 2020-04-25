@@ -1,6 +1,18 @@
 import ConnectionManager from './ConnectionManager'
 import {DynamoService} from './dynamodbClient';
-import {ConnectionOptions} from './types';
+import {ConnectionOptions, IWSOperation} from './types';
+import {execute, GraphQLSchema, parse} from 'graphql';
+
+async function mapDataToPayload(data: any, operation: IWSOperation, schema: GraphQLSchema) {
+	const result = await execute({
+		document: parse(operation.payload.query),
+		operationName: operation.operationName,
+		schema,
+		rootValue: data,
+	})
+
+	return result.data
+}
 
 class TopicDispatcher {
 	private readonly dynamoDbService: DynamoService;
@@ -24,9 +36,10 @@ class TopicDispatcher {
 		return subs
 	}
 
-	async pushMessageToConnectionsForTopic(topic: string, data: any) {
+	async pushMessageToConnectionsForTopic(topic: string, data: any, schema: GraphQLSchema) {
 		const subscribers = await this.getSubscribers(topic)
-		const promises = subscribers.map(async ({ connectionId, subscriptionId }) => {
+		const promises = subscribers.map(async (row) => {
+			const { connectionId, subscriptionId, operation } = row
 			const topicConnectionManager = new ConnectionManager(
 				connectionId,
 				this.dynamoDbService,
@@ -35,11 +48,12 @@ class TopicDispatcher {
 			try {
 				const res = await topicConnectionManager.sendMessage({
 					id: subscriptionId,
-					payload: { data },
+					payload: { data: await mapDataToPayload(data, operation, schema) },
 					type: 'data'
 				})
 				return res
 			} catch(err) {
+				console.error(err)
 				if(err.statusCode === 410) {
 					return topicConnectionManager.unsubscribe()
 				}

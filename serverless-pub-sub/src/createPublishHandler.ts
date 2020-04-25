@@ -1,5 +1,6 @@
 import DynamoDB from 'aws-sdk/clients/dynamodb'
 import {ServerlessPubSub} from './ServerlessPubSub';
+import {GraphQLSchema} from 'graphql';
 
 const parseNewEvent = DynamoDB.Converter.unmarshall
 
@@ -7,12 +8,14 @@ interface Options {
 	pubSub: ServerlessPubSub;
 	isOffline: boolean;
 	logger?: Function,
+	schema: Promise<GraphQLSchema> | GraphQLSchema,
 }
 
 const noop = () => undefined
 
 export const createPublishHandler = (options: Options) => async (event: any) => {
 	const { pubSub, isOffline, logger = noop } = options
+	const schema = await options.schema
 	const subscription = event.Records[0]
 	if(subscription.eventName !== 'INSERT') {
 		logger(event)
@@ -22,5 +25,5 @@ export const createPublishHandler = (options: Options) => async (event: any) => 
 	const { topic, data } = isOffline ?
 		subscription.dynamodb.NewImage :
 		parseNewEvent(subscription.dynamodb.NewImage)
-	return pubSub.pushMessageToConections(topic, data)
+	return pubSub.pushMessageToConections(topic, data, schema)
 }
